@@ -1691,7 +1691,7 @@
       else { showModal("¡Partido creado!", `${home} vs ${away} agregado.`); loadAdminTab(); loadMatchesAndPredictions(); loadHistory(); }
     });
 
-    // ===== BOTÓN GUARDAR RESULTADO (AHORA CON CÁLCULO DE PUNTOS) =====
+    // ===== BOTÓN GUARDAR RESULTADO (CON CÁLCULO DE PUNTOS) =====
     document.querySelectorAll('.saveResultBtn').forEach(btn => {
       btn.onclick = async () => {
         const matchId = btn.getAttribute('data-match');
@@ -1752,7 +1752,7 @@
         loadRanking();
         loadMatchesAndPredictions();
         loadHistory();
-        loadAllPredictions(); // actualizar también la pestaña "Todos"
+        loadAllPredictions();
       };
     });
   }
@@ -1820,6 +1820,17 @@
           </div>
         ` : '<p style="font-size:0.85rem; color:var(--slate-light);">No hay depósitos registrados.</p>'}
       </div>
+
+      <!-- NUEVO BOTÓN PARA EXPORTAR CSV -->
+      <div class="settings-section" style="margin-top:1rem;">
+        <h3><i class="fas fa-download"></i> Respaldo y transparencia</h3>
+        <p style="font-size:0.85rem; color:var(--slate-light); margin-bottom:0.75rem;">
+          Descarga un archivo CSV con todos los pronósticos y puntos del grupo.
+        </p>
+        <button id="downloadCsvBtn" class="btn btn-primary btn-sm">
+          <i class="fas fa-file-csv"></i> Descargar CSV
+        </button>
+      </div>
     `;
 
     document.getElementById("copyIdSettings")?.addEventListener('click', () => {
@@ -1857,6 +1868,9 @@
         }
       });
     }
+
+    // Listener para el botón de descarga CSV
+    document.getElementById("downloadCsvBtn")?.addEventListener('click', downloadCSV);
   }
 
   // ========== NAV ==========
@@ -1877,6 +1891,74 @@
   document.querySelectorAll('.tab').forEach(tab => {
     tab.onclick = () => switchTab(tab.getAttribute('data-tab'));
   });
+
+  // ========== EXPORTACIÓN CSV ==========
+  async function downloadCSV() {
+    if (!currentGroup) {
+      showModal("Error", "No hay grupo seleccionado.", true);
+      return;
+    }
+    showModal("Generando CSV", "Espera un momento mientras se prepara el archivo...");
+
+    // 1. Obtener todas las predicciones del grupo
+    const { data: predictions } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('group_id', currentGroup.id);
+
+    if (!predictions || predictions.length === 0) {
+      showModal("Sin datos", "No hay pronósticos en este grupo para exportar.", true);
+      return;
+    }
+
+    // 2. Obtener todos los partidos involucrados
+    const matchIds = [...new Set(predictions.map(p => p.match_id))];
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('*')
+      .in('id', matchIds);
+
+    // Mapa de partidos
+    const matchMap = new Map(matches?.map(m => [m.id, m]) || []);
+
+    // 3. Obtener perfiles de los usuarios
+    const userIds = [...new Set(predictions.map(p => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds);
+    const userMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+    // 4. Construir el contenido CSV
+    const BOM = '\uFEFF';  // Marca BOM para que Excel reconozca UTF-8
+    const header = 'Partido,Fecha,Resultado,Jugador,Pronóstico Local,Pronóstico Visitante,Puntos';
+    const rows = predictions.map(p => {
+      const match = matchMap.get(p.match_id);
+      const matchName = match ? `${match.home_team} vs ${match.away_team}` : 'Desconocido';
+      const date = match ? formatDateTime(match.match_datetime) : '';
+      const result = match?.result ? `${match.result.home}-${match.result.away}` : 'Pendiente';
+      const username = userMap.get(p.user_id) || p.user_id;
+      const local = p.predicted_home;
+      const visit = p.predicted_away;
+      const points = p.points_earned ?? '';
+      return `"${matchName}","${date}","${result}","${username}",${local},${visit},${points}`;
+    });
+
+    const csvContent = BOM + header + '\n' + rows.join('\n');
+
+    // 5. Descargar el archivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `backup_${currentGroup.name.replace(/[^a-z0-9]/gi,'_')}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showModal("¡Descarga lista!", "El archivo CSV se ha descargado correctamente.");
+  }
 
   // ========== BOOT ==========
   loadUser();
