@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Polla Mundialera</title>
+  <title>Polla Mundialera Pro</title>
   <link rel="icon" type="image/png" href="https://mexicofanshop.com/cdn/shop/files/JD8031_1_HARDWARE_Photography_Front-Center-View_transparent.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -922,7 +922,7 @@
     .mt-2 { margin-top: 0.85rem; }
     .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 
-    /* ===== NUEVOS ESTILOS PARA TABLA DE PREDICCIONES DE TODOS ===== */
+    /* ===== ESTILOS PARA TABLA DE PREDICCIONES DE TODOS ===== */
     .all-predictions-table {
       width: 100%;
       border-collapse: collapse;
@@ -1038,7 +1038,7 @@
       <div class="tabs-wrapper">
         <div class="tabs" id="groupTabs">
           <div class="tab active" data-tab="predictions"><i class="fas fa-chart-bar"></i> Pronósticos</div>
-          <div class="tab" data-tab="allpredictions"><i class="fas fa-users"></i> Todos</div>   <!-- NUEVA PESTAÑA -->
+          <div class="tab" data-tab="allpredictions"><i class="fas fa-users"></i> Todos</div>
           <div class="tab" data-tab="ranking"><i class="fas fa-trophy"></i> Ranking</div>
           <div class="tab" data-tab="history"><i class="fas fa-history"></i> Historial</div>
           <div class="tab" data-tab="chat"><i class="fas fa-comments"></i> Chat</div>
@@ -1050,7 +1050,7 @@
       <!-- Tab contents -->
       <div style="padding: 1.5rem 2rem;">
         <div id="tabPredictions" class="tab-content"></div>
-        <div id="tabAllpredictions" class="tab-content hidden"></div>   <!-- NUEVO CONTENEDOR -->
+        <div id="tabAllpredictions" class="tab-content hidden"></div>
         <div id="tabRanking" class="tab-content hidden"></div>
         <div id="tabHistory" class="tab-content hidden"></div>
 
@@ -1262,7 +1262,7 @@
     groupIdDisplay.onclick = () => { navigator.clipboard.writeText(group.id); showModal("Copiado","ID copiado"); };
     adminTab.style.display = (group.created_by === currentUser.id) ? "flex" : "none";
     await loadMatchesAndPredictions();
-    await loadAllPredictions();   // Carga inicial de la pestaña "Todos"
+    await loadAllPredictions();
     await loadRanking();
     await loadHistory();
     await setupChat();
@@ -1412,7 +1412,6 @@
       return;
     }
 
-    // Obtener miembros del grupo
     const { data: members } = await supabase
       .from('group_members')
       .select('user_id')
@@ -1429,7 +1428,6 @@
       .in('id', userIds);
     const userMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
 
-    // Obtener todas las predicciones del grupo para los partidos de hoy
     const matchIds = matchesList.map(m => m.id);
     const { data: allPredictions } = await supabase
       .from('predictions')
@@ -1437,7 +1435,6 @@
       .eq('group_id', currentGroup.id)
       .in('match_id', matchIds);
 
-    // Agrupar predicciones por partido y usuario
     const predByMatch = new Map();
     matchesList.forEach(m => predByMatch.set(m.id, new Map()));
     allPredictions?.forEach(p => {
@@ -1451,7 +1448,6 @@
       const status = getMatchStatus(match, minutosLimite);
       const statusLabel = status === 'open' ? 'Abierto' : status === 'locked' ? 'Cerrado' : 'Finalizado';
 
-      // Si el partido está abierto, ocultamos los pronósticos
       if (status === 'open') {
         return `
           <div class="match-ticket">
@@ -1473,7 +1469,6 @@
         `;
       }
 
-      // Partido cerrado o finalizado: mostrar tabla con todos los miembros
       const matchPredictions = predByMatch.get(match.id) || new Map();
       return `
         <div class="match-ticket">
@@ -1695,15 +1690,69 @@
       if (error) showModal("Error", error.message, true);
       else { showModal("¡Partido creado!", `${home} vs ${away} agregado.`); loadAdminTab(); loadMatchesAndPredictions(); loadHistory(); }
     });
+
+    // ===== BOTÓN GUARDAR RESULTADO (AHORA CON CÁLCULO DE PUNTOS) =====
     document.querySelectorAll('.saveResultBtn').forEach(btn => {
       btn.onclick = async () => {
         const matchId = btn.getAttribute('data-match');
         const home    = parseInt(document.getElementById(`res_home_${matchId}`).value);
         const away    = parseInt(document.getElementById(`res_away_${matchId}`).value);
         if (isNaN(home)||isNaN(away)) { showModal("Error", "Ingresá números válidos.", true); return; }
-        const { error } = await supabase.from('matches').update({ result: { home, away }, status: 'finished' }).eq('id', matchId);
-        if (error) showModal("Error", error.message, true);
-        else { showModal("Resultado guardado", "Puntos actualizados automáticamente."); loadAdminTab(); loadRanking(); loadMatchesAndPredictions(); loadHistory(); }
+
+        // 1. Actualizar el partido con el resultado y estado 'finished'
+        const { error } = await supabase
+          .from('matches')
+          .update({ result: { home, away }, status: 'finished' })
+          .eq('id', matchId);
+        if (error) {
+          showModal("Error", error.message, true);
+          return;
+        }
+
+        // 2. Obtener todas las predicciones de este partido en el grupo
+        const { data: predictions } = await supabase
+          .from('predictions')
+          .select('*')
+          .eq('match_id', matchId)
+          .eq('group_id', currentGroup.id);
+
+        if (predictions && predictions.length > 0) {
+          // 3. Calcular puntos según la configuración del grupo
+          const config = currentGroup.config;
+          const updates = predictions.map(pred => {
+            let points = 0;
+            const predHome = pred.predicted_home;
+            const predAway = pred.predicted_away;
+
+            if (predHome === home && predAway === away) {
+              // Marcador exacto
+              points = config.puntos_marcador_exacto || 0;
+            } else if (predHome === predAway && home === away) {
+              // Empate acertado pero no exacto
+              points = config.puntos_empate || 0;
+            } else if (
+              (predHome > predAway && home > away) ||
+              (predHome < predAway && home < away)
+            ) {
+              // Ganador acertado
+              points = config.puntos_ganador || 0;
+            }
+
+            return supabase
+              .from('predictions')
+              .update({ points_earned: points })
+              .eq('id', pred.id);
+          });
+
+          await Promise.all(updates);
+        }
+
+        showModal("Resultado guardado", "Puntos actualizados correctamente.");
+        loadAdminTab();
+        loadRanking();
+        loadMatchesAndPredictions();
+        loadHistory();
+        loadAllPredictions(); // actualizar también la pestaña "Todos"
       };
     });
   }
@@ -1823,7 +1872,7 @@
     if (tabId === 'chat')     loadChatMessages();
     if (tabId === 'admin'  && currentGroup?.created_by === currentUser?.id) loadAdminTab();
     if (tabId === 'settings') loadSettingsTab();
-    if (tabId === 'allpredictions') loadAllPredictions();   // <-- NUEVA LLAMADA
+    if (tabId === 'allpredictions') loadAllPredictions();
   }
   document.querySelectorAll('.tab').forEach(tab => {
     tab.onclick = () => switchTab(tab.getAttribute('data-tab'));
