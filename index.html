@@ -922,6 +922,34 @@
     .mt-2 { margin-top: 0.85rem; }
     .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 
+    /* ===== NUEVOS ESTILOS PARA TABLA DE PREDICCIONES DE TODOS ===== */
+    .all-predictions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+    }
+    .all-predictions-table th {
+      text-align: left;
+      padding: 0.4rem 0.5rem;
+      background: var(--cream-dark);
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--slate-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .all-predictions-table td {
+      padding: 0.35rem 0.5rem;
+      border-bottom: 1px solid var(--cream-dark);
+      color: var(--slate);
+    }
+    .all-predictions-table td:last-child,
+    .all-predictions-table th:last-child {
+      text-align: center;
+    }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 640px) {
       body { padding: 0.5rem; }
@@ -1010,6 +1038,7 @@
       <div class="tabs-wrapper">
         <div class="tabs" id="groupTabs">
           <div class="tab active" data-tab="predictions"><i class="fas fa-chart-bar"></i> Pronósticos</div>
+          <div class="tab" data-tab="allpredictions"><i class="fas fa-users"></i> Todos</div>   <!-- NUEVA PESTAÑA -->
           <div class="tab" data-tab="ranking"><i class="fas fa-trophy"></i> Ranking</div>
           <div class="tab" data-tab="history"><i class="fas fa-history"></i> Historial</div>
           <div class="tab" data-tab="chat"><i class="fas fa-comments"></i> Chat</div>
@@ -1021,6 +1050,7 @@
       <!-- Tab contents -->
       <div style="padding: 1.5rem 2rem;">
         <div id="tabPredictions" class="tab-content"></div>
+        <div id="tabAllpredictions" class="tab-content hidden"></div>   <!-- NUEVO CONTENEDOR -->
         <div id="tabRanking" class="tab-content hidden"></div>
         <div id="tabHistory" class="tab-content hidden"></div>
 
@@ -1232,6 +1262,7 @@
     groupIdDisplay.onclick = () => { navigator.clipboard.writeText(group.id); showModal("Copiado","ID copiado"); };
     adminTab.style.display = (group.created_by === currentUser.id) ? "flex" : "none";
     await loadMatchesAndPredictions();
+    await loadAllPredictions();   // Carga inicial de la pestaña "Todos"
     await loadRanking();
     await loadHistory();
     await setupChat();
@@ -1367,6 +1398,133 @@
         await loadMatchesAndPredictions();
       };
     });
+  }
+
+  // ========== NUEVA FUNCIÓN: CARGAR PREDICCIONES DE TODOS LOS MIEMBROS ==========
+  async function loadAllPredictions() {
+    const container = document.getElementById("tabAllpredictions");
+    if (!currentGroup?.config) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando…</p></div>`;
+      return;
+    }
+    if (!matchesList.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No hay partidos programados para hoy.</p></div>`;
+      return;
+    }
+
+    // Obtener miembros del grupo
+    const { data: members } = await supabase
+      .from('group_members')
+      .select('user_id')
+      .eq('group_id', currentGroup.id);
+    if (!members?.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>No hay miembros en el grupo.</p></div>`;
+      return;
+    }
+
+    const userIds = members.map(m => m.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds);
+    const userMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+    // Obtener todas las predicciones del grupo para los partidos de hoy
+    const matchIds = matchesList.map(m => m.id);
+    const { data: allPredictions } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('group_id', currentGroup.id)
+      .in('match_id', matchIds);
+
+    // Agrupar predicciones por partido y usuario
+    const predByMatch = new Map();
+    matchesList.forEach(m => predByMatch.set(m.id, new Map()));
+    allPredictions?.forEach(p => {
+      const matchMap = predByMatch.get(p.match_id);
+      if (matchMap) matchMap.set(p.user_id, p);
+    });
+
+    const minutosLimite = currentGroup.config.minutos_limite_antes || 30;
+
+    container.innerHTML = matchesList.map(match => {
+      const status = getMatchStatus(match, minutosLimite);
+      const statusLabel = status === 'open' ? 'Abierto' : status === 'locked' ? 'Cerrado' : 'Finalizado';
+
+      // Si el partido está abierto, ocultamos los pronósticos
+      if (status === 'open') {
+        return `
+          <div class="match-ticket">
+            <div class="ticket-header status-open">
+              <span><span class="status-dot"></span>${statusLabel}</span>
+              <span><i class="far fa-clock" style="margin-right:0.3rem;"></i>${formatDateTime(match.match_datetime)}</span>
+            </div>
+            <div class="ticket-body">
+              <div class="teams-row">
+                <span class="team-name">${escapeHtml(match.home_team)}</span>
+                <span class="vs-badge">VS</span>
+                <span class="team-name away">${escapeHtml(match.away_team)}</span>
+              </div>
+              <div class="locked-banner" style="margin-top:0.5rem;">
+                <i class="fas fa-eye-slash"></i> Los pronósticos se mostrarán cuando el partido esté cerrado
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Partido cerrado o finalizado: mostrar tabla con todos los miembros
+      const matchPredictions = predByMatch.get(match.id) || new Map();
+      return `
+        <div class="match-ticket">
+          <div class="ticket-header status-${status}">
+            <span><span class="status-dot"></span>${statusLabel}</span>
+            <span><i class="far fa-clock" style="margin-right:0.3rem;"></i>${formatDateTime(match.match_datetime)}</span>
+          </div>
+          <div class="ticket-body">
+            <div class="teams-row">
+              <span class="team-name">${escapeHtml(match.home_team)}</span>
+              <span class="vs-badge">VS</span>
+              <span class="team-name away">${escapeHtml(match.away_team)}</span>
+            </div>
+            <table class="all-predictions-table">
+              <thead>
+                <tr>
+                  <th>Jugador</th>
+                  <th style="text-align:center;">Local</th>
+                  <th style="text-align:center;">Visitante</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${userIds.map(uid => {
+                  const pred = matchPredictions.get(uid);
+                  const username = userMap.get(uid) || uid;
+                  const isYou = uid === currentUser.id;
+                  const crown = uid === currentGroup.created_by ? ' <i class="fas fa-crown" style="color:var(--gold); font-size:0.7rem;"></i>' : '';
+                  if (pred) {
+                    return `
+                      <tr>
+                        <td>${escapeHtml(username)}${crown} ${isYou ? '<span style="background:var(--gold-light);color:#78350f;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:100px;margin-left:0.3rem;font-weight:600;">Tú</span>' : ''}</td>
+                        <td style="text-align:center; font-weight:600;">${pred.predicted_home}</td>
+                        <td style="text-align:center; font-weight:600;">${pred.predicted_away}</td>
+                      </tr>
+                    `;
+                  } else {
+                    return `
+                      <tr>
+                        <td>${escapeHtml(username)}${crown} ${isYou ? '<span style="background:var(--gold-light);color:#78350f;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:100px;margin-left:0.3rem;font-weight:600;">Tú</span>' : ''}</td>
+                        <td colspan="2" style="text-align:center; color:var(--slate-light); font-style:italic;">Sin pronóstico</td>
+                      </tr>
+                    `;
+                  }
+                }).join('')}
+              </tbody>
+            </table>
+            ${match.result ? `<div class="result-badge" style="margin-top:0.5rem;"><i class="fas fa-futbol"></i> Resultado oficial: ${match.result.home} – ${match.result.away}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
   // ========== HISTORY ==========
@@ -1665,6 +1823,7 @@
     if (tabId === 'chat')     loadChatMessages();
     if (tabId === 'admin'  && currentGroup?.created_by === currentUser?.id) loadAdminTab();
     if (tabId === 'settings') loadSettingsTab();
+    if (tabId === 'allpredictions') loadAllPredictions();   // <-- NUEVA LLAMADA
   }
   document.querySelectorAll('.tab').forEach(tab => {
     tab.onclick = () => switchTab(tab.getAttribute('data-tab'));
