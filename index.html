@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Polla Mundialera Pro · Quiniela en grupos</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .header {
+      background: #0f172a;
+      color: white;
+      padding: 1.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: "⚽";
+      font-size: 6rem;
+      position: absolute;
+      right: -20px;
+      bottom: -30px;
+      opacity: 0.1;
+    }
+    .header h1 { font-size: 1.8rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+    .header p { margin-top: 0.5rem; opacity: 0.8; font-size: 0.9rem; }
+    .auth-bar {
+      background: #f8fafc;
+      padding: 0.8rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .auth-forms { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    .auth-input, input:not([type=checkbox]), textarea, select {
+      padding: 0.7rem 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 1rem;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      background: white;
+      width: 100%;
+    }
+    .auth-input:focus, input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    }
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-size: 0.9rem;
+    }
+    .btn-primary { background: #0f172a; color: white; }
+    .btn-primary:hover { background: #1e293b; transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.1); }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #eef2ff;
+      padding: 0.3rem 1rem 0.3rem 0.8rem;
+      border-radius: 2rem;
+    }
+    .avatar {
+      background: #3b82f6;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .main { padding: 2rem; }
+    .hidden { display: none; }
+    .flex { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+    .card {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
+      transition: all 0.2s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+    .tabs { display: flex; gap: 0.5rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab { padding: 0.6rem 1.2rem; cursor: pointer; border-radius: 2rem 2rem 0 0; font-weight: 500; transition: all 0.2s; }
+    .tab.active { background: #0f172a; color: white; }
+    .group-id { background: #e2e8f0; padding: 0.3rem 0.8rem; border-radius: 2rem; font-family: monospace; font-size: 0.8rem; cursor: pointer; }
+    .group-id:hover { background: #cbd5e1; }
+    .chat-container { height: 450px; overflow-y: auto; background: #fafcff; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
+    .message { margin-bottom: 1rem; padding: 0.7rem; border-radius: 1rem; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border-left: 3px solid #3b82f6; }
+    .ranking-table { width: 100%; border-collapse: collapse; }
+    .ranking-table th, .ranking-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+    .badge { background: #e2e8f0; padding: 0.2rem 0.6rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 500; display: inline-block; margin-top: 0.5rem; }
+    .premio-card { background: linear-gradient(135deg, #fef9c3, #fde047); padding: 1rem; border-radius: 1.2rem; margin-top: 1rem; }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 2rem;
+      max-width: 400px;
+      width: 90%;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      animation: fadeInUp 0.2s ease;
+    }
+    .modal-content h3 { margin-bottom: 1rem; }
+    .modal-buttons { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 700px) { body { padding: 0.5rem; } .main { padding: 1rem; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-futbol"></i> Polla Mundialera Pro</h1>
+    <p>Pronósticos solo para partidos de hoy · Historial de pasados · Ranking con todos · Chat real</p>
+  </div>
+
+  <div class="auth-bar" id="authBar">
+    <div id="unauthenticated" class="auth-forms">
+      <input type="email" id="loginEmail" class="auth-input" placeholder="Email">
+      <input type="password" id="loginPassword" class="auth-input" placeholder="Contraseña">
+      <button id="doLogin" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Iniciar sesión</button>
+      <button id="doSignup" class="btn btn-secondary"><i class="fas fa-user-plus"></i> Registrarse</button>
+    </div>
+    <div id="authenticated" class="hidden user-info">
+      <div class="avatar" id="userAvatar"></div>
+      <span id="userName"></span>
+      <button id="logoutBtn" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main" id="appContent">
+    <div id="groupsPanel">
+      <div class="flex" style="justify-content: space-between;">
+        <h2><i class="fas fa-users"></i> Mis grupos</h2>
+        <button id="showCreateGroupModalBtn" class="btn btn-primary"><i class="fas fa-plus-circle"></i> Nuevo grupo</button>
+      </div>
+      <div id="groupsList" class="grid-2" style="margin-top:1rem"></div>
+      <div style="margin-top:1.5rem; background:#f8fafc; padding:1rem; border-radius:1.5rem;">
+        <div class="flex">
+          <input type="text" id="joinGroupId" placeholder="Pega el ID del grupo aquí" style="flex:1">
+          <button id="joinGroupBtn" class="btn btn-primary"><i class="fas fa-user-plus"></i> Unirse</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="groupView" class="hidden">
+      <button id="backToGroupsBtn" class="btn btn-secondary" style="margin-bottom:1rem"><i class="fas fa-arrow-left"></i> Volver a grupos</button>
+      <div class="flex" style="justify-content: space-between; align-items: baseline;">
+        <h2 id="groupNameHeader"></h2>
+        <div id="groupIdDisplay" class="group-id">ID: cargando...</div>
+      </div>
+      <div class="tabs" id="groupTabs">
+        <div class="tab active" data-tab="predictions"><i class="fas fa-chart-line"></i> Pronósticos (hoy)</div>
+        <div class="tab" data-tab="ranking"><i class="fas fa-trophy"></i> Ranking</div>
+        <div class="tab" data-tab="history"><i class="fas fa-history"></i> Historial</div>
+        <div class="tab" data-tab="chat"><i class="fas fa-comments"></i> Chat</div>
+        <div class="tab" data-tab="admin" id="adminTab" style="display:none;"><i class="fas fa-cog"></i> Admin</div>
+        <div class="tab" data-tab="settings"><i class="fas fa-sliders-h"></i> Configuración</div>
+      </div>
+      <div id="tabPredictions" class="tab-content"></div>
+      <div id="tabRanking" class="tab-content hidden"></div>
+      <div id="tabHistory" class="tab-content hidden"></div>
+      <div id="tabChat" class="tab-content hidden">
+        <div id="chatMessages" class="chat-container"></div>
+        <div class="flex"><input type="text" id="chatInput" placeholder="Escribe un mensaje..." style="flex:1"><button id="sendChatBtn" class="btn btn-primary">Enviar</button></div>
+      </div>
+      <div id="tabAdmin" class="tab-content hidden"></div>
+      <div id="tabSettings" class="tab-content hidden"></div>
+    </div>
+  </div>
+</div>
+
+<div id="globalModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Mensaje</h3>
+    <p id="modalMessage"></p>
+    <div class="modal-buttons">
+      <button id="modalConfirmBtn" class="btn btn-primary">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ========== CONFIGURACIÓN SUPABASE ==========
+    const SUPABASE_URL = "https://rtbhxguwqxvqhyjgbzlg.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_Ht7ahyUKK1KaIAqBdmPvvg_ARKUrexs";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let currentGroup = null;
+    let groupsList = [];
+    let matchesList = [];
+    let predictionsMap = new Map();
+    let chatSubscription = null;
+
+    // DOM elements
+    const unauthenticatedDiv = document.getElementById("unauthenticated");
+    const authenticatedDiv = document.getElementById("authenticated");
+    const groupsPanelDiv = document.getElementById("groupsPanel");
+    const groupViewDiv = document.getElementById("groupView");
+    const groupsListDiv = document.getElementById("groupsList");
+    const groupNameHeader = document.getElementById("groupNameHeader");
+    const groupIdDisplay = document.getElementById("groupIdDisplay");
+    const adminTab = document.getElementById("adminTab");
+
+    const modal = document.getElementById("globalModal");
+    const modalTitle = document.getElementById("modalTitle");
+    const modalMessage = document.getElementById("modalMessage");
+    const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+
+    function showModal(title, message, isError = false) {
+      modalTitle.innerText = title;
+      modalMessage.innerText = message;
+      modal.style.display = "flex";
+      modalConfirmBtn.onclick = () => { modal.style.display = "none"; };
+      if (isError) modalTitle.style.color = "#dc2626";
+      else modalTitle.style.color = "#0f172a";
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+    // Formatear fecha/hora en zona horaria de Bolivia (UTC-4)
+    function formatDateTime(dateString) {
+  if (!dateString) return '';
+
+  const [fecha, hora] = dateString.split('T');
+
+  return `${fecha.split('-').reverse().join('/')} ${hora.slice(0, 5)}`;
+}
+
+    // Obtener la fecha actual (sin hora) en Bolivia para comparar
+    function getCurrentBoliviaDate() {
+      const now = new Date();
+      const boliviaDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/La_Paz' }));
+      boliviaDate.setHours(0,0,0,0);
+      return boliviaDate;
+    }
+
+    // Comparar si un partido es del día actual (Bolivia)
+    function isMatchToday(matchDateISO) {
+      const matchDate = new Date(matchDateISO);
+      const matchBolivia = new Date(matchDate.toLocaleString('en-US', { timeZone: 'America/La_Paz' }));
+      matchBolivia.setHours(0,0,0,0);
+      const todayBolivia = getCurrentBoliviaDate();
+      return matchBolivia.getTime() === todayBolivia.getTime();
+    }
+
+    // ========== AUTENTICACIÓN ==========
+    async function loadUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        currentUser = session.user;
+        await ensureProfile();
+        authenticatedDiv.classList.remove("hidden");
+        unauthenticatedDiv.classList.add("hidden");
+        const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+        document.getElementById("userName").innerText = username;
+        document.getElementById("userAvatar").innerText = username.charAt(0).toUpperCase();
+        await loadGroups();
+        groupsPanelDiv.classList.remove("hidden");
+        groupViewDiv.classList.add("hidden");
+      } else {
+        currentUser = null;
+        authenticatedDiv.classList.add("hidden");
+        unauthenticatedDiv.classList.remove("hidden");
+        groupsPanelDiv.classList.add("hidden");
+        groupViewDiv.classList.add("hidden");
+      }
+    }
+
+    async function ensureProfile() {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+      if (!data) {
+        const username = currentUser.email.split('@')[0] + Math.floor(Math.random()*1000);
+        await supabase.from('profiles').insert({ id: currentUser.id, username });
+      }
+    }
+
+    document.getElementById("doLogin").onclick = async () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) showModal("Error", error.message, true);
+      else loadUser();
+    };
+    document.getElementById("doSignup").onclick = async () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) showModal("Error", error.message, true);
+      else showModal("Registro exitoso", "Ahora inicia sesión.");
+    };
+    document.getElementById("logoutBtn").onclick = async () => {
+      await supabase.auth.signOut();
+      loadUser();
+    };
+
+    // ========== GRUPOS ==========
+    async function loadGroups() {
+      const { data: memberships } = await supabase
+        .from('group_members')
+        .select('group_id')
+        .eq('user_id', currentUser.id);
+      if (!memberships || memberships.length === 0) {
+        groupsListDiv.innerHTML = "<div class='card'>No estás en ningún grupo. Crea uno o únete.</div>";
+        return;
+      }
+      const groupIds = memberships.map(m => m.group_id);
+      const { data: groups } = await supabase.from('groups').select('*').in('id', groupIds);
+      groupsList = groups || [];
+      renderGroupsList();
+    }
+
+    function renderGroupsList() {
+      if (!groupsList.length) { groupsListDiv.innerHTML = "<div class='card'>Sin grupos</div>"; return; }
+      groupsListDiv.innerHTML = groupsList.map(g => `
+        <div class="card">
+          <h3><i class="fas fa-users"></i> ${escapeHtml(g.name)}</h3>
+          <p><i class="fas fa-dollar-sign"></i> Fondo común: Bs. ${g.fondo_comun_total || 0}</p>
+          <p><span class="group-id" data-id="${g.id}">ID: ${g.id}</span> <i class="fas fa-copy"></i> clic para copiar</p>
+          <button data-group-id="${g.id}" class="selectGroupBtn btn btn-primary" style="margin-top:0.5rem">Acceder <i class="fas fa-arrow-right"></i></button>
+        </div>
+      `).join('');
+      document.querySelectorAll('.group-id').forEach(el => {
+        el.onclick = (e) => {
+          const id = el.getAttribute('data-id') || el.innerText.replace('ID: ', '');
+          navigator.clipboard.writeText(id);
+          showModal("Copiado", "ID copiado al portapapeles");
+          e.stopPropagation();
+        };
+      });
+      document.querySelectorAll('.selectGroupBtn').forEach(btn => {
+        btn.onclick = () => selectGroup(btn.getAttribute('data-group-id'));
+      });
+    }
+
+    async function selectGroup(groupId) {
+      const group = groupsList.find(g => g.id === groupId);
+      if (!group) return;
+      currentGroup = group;
+      groupNameHeader.innerText = group.name;
+      groupIdDisplay.innerText = `ID: ${group.id}`;
+      groupIdDisplay.onclick = () => { navigator.clipboard.writeText(group.id); showModal("Copiado", "ID copiado"); };
+      adminTab.style.display = (currentGroup.created_by === currentUser.id) ? "inline-block" : "none";
+      await loadMatchesAndPredictions();
+      await loadRanking();
+      await loadHistory();
+      await setupChat();
+      await loadAdminTab();
+      await loadSettingsTab();
+      groupsPanelDiv.classList.add("hidden");
+      groupViewDiv.classList.remove("hidden");
+      switchTab('predictions');
+    }
+
+    document.getElementById("backToGroupsBtn").onclick = () => {
+      if (chatSubscription) chatSubscription.unsubscribe();
+      groupViewDiv.classList.add("hidden");
+      groupsPanelDiv.classList.remove("hidden");
+      loadGroups();
+    };
+
+    document.getElementById("showCreateGroupModalBtn").onclick = () => {
+      const name = prompt("Nombre del grupo:");
+      if (!name) return;
+      const config = {
+        tipo_pronostico: "marcador",
+        puntos_ganador: 3,
+        puntos_empate: 1,
+        puntos_marcador_exacto: 5,
+        minutos_limite_antes: 30,
+        porcentajes_premios: { "1": 50, "2": 30, "3": 15, "4": 5 }
+      };
+      supabase.from('groups').insert({ name, created_by: currentUser.id, config }).select().then(async ({ data, error }) => {
+        if (error) showModal("Error", error.message, true);
+        else {
+          await supabase.from('group_members').insert({ group_id: data[0].id, user_id: currentUser.id, role: 'admin' }).catch(e => console.log);
+          await loadGroups();
+          showModal("Grupo creado", `✅ "${name}" creado. ID: ${data[0].id} (guárdalo para compartir)`);
+        }
+      });
+    };
+
+    document.getElementById("joinGroupBtn").onclick = async () => {
+      const groupId = document.getElementById("joinGroupId").value.trim();
+      if (!groupId) return;
+      const { data: group, error: fetchError } = await supabase.from('groups').select('id').eq('id', groupId).maybeSingle();
+      if (!group) { showModal("Error", "Grupo no existe o no tienes permiso", true); return; }
+      const { error } = await supabase.from('group_members').insert({ group_id: groupId, user_id: currentUser.id });
+      if (error) showModal("Error", error.message, true);
+      else { await loadGroups(); document.getElementById("joinGroupId").value = ''; showModal("Unido", "Te has unido al grupo"); }
+    };
+
+    // ========== PRONÓSTICOS (SOLO PARTIDOS DE HOY) ==========
+    async function loadMatchesAndPredictions() {
+      // Obtener todos los partidos (sin filtrar por fecha en la consulta, luego filtramos en frontend)
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('*')
+        .order('match_datetime', { ascending: true });
+      // Filtrar solo los partidos que son del día actual (según Bolivia)
+      matchesList = (matches || []).filter(match => isMatchToday(match.match_datetime));
+      const { data: predictions } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('group_id', currentGroup.id)
+        .eq('user_id', currentUser.id);
+      predictionsMap.clear();
+      predictions.forEach(p => predictionsMap.set(`${p.match_id}:${currentGroup.id}`, p));
+      renderPredictionsTab();
+    }
+
+ function renderPredictionsTab() {
+  const container = document.getElementById("tabPredictions");
+  if (!currentGroup || !currentGroup.config) {
+    container.innerHTML = "<div class='card'>Cargando configuración...</div>";
+    return;
+  }
+  if (matchesList.length === 0) {
+    container.innerHTML = "<div class='card'>No hay partidos programados para hoy.</div>";
+    return;
+  }
+  const now = new Date();
+  const minutosLimite = currentGroup.config.minutos_limite_antes || 30;
+
+  container.innerHTML = matchesList.map(match => {
+    const matchDate = parseDateWithoutTimezone(match.match_datetime);
+    const limite = new Date(matchDate.getTime() - minutosLimite * 60000);
+    const isLocked = now > limite;
+    const existingPrediction = predictionsMap.get(`${match.id}:${currentGroup.id}`);
+    const hasPrediction = !!existingPrediction;
+    let homeVal = existingPrediction?.predicted_home ?? '';
+    let awayVal = existingPrediction?.predicted_away ?? '';
+
+    const hasResult = match.result && match.result.home !== undefined;
+
+    return `
+      <div class="card">
+        <h3><i class="fas fa-futbol"></i> ${escapeHtml(match.home_team)} vs ${escapeHtml(match.away_team)}</h3>
+        <div><i class="far fa-calendar-alt"></i> ${formatDateTime(match.match_datetime)}</div>
+        
+        ${hasPrediction ? `
+          <div style="margin-top:0.5rem; background:#e6f7e6; padding:0.3rem 0.6rem; border-radius:1rem; display:inline-block;">
+            <i class="fas fa-check-circle" style="color:green"></i> <strong>Tu pronóstico:</strong> ${homeVal} - ${awayVal}
+          </div>
+        ` : (isLocked ? '<div class="badge">⏰ Tiempo límite pasado, no realizaste pronóstico</div>' : '')}
+        
+        ${hasResult ? `
+          <div style="margin-top:0.5rem; background:#e2e8f0; padding:0.3rem 0.6rem; border-radius:1rem; display:inline-block;">
+            <i class="fas fa-futbol"></i> <strong>Resultado final:</strong> ${match.result.home} - ${match.result.away}
+          </div>
+        ` : ''}
+        
+        ${isLocked ? '<div class="badge"><i class="fas fa-lock"></i> Pronóstico cerrado</div>' : ''}
+        
+        ${!isLocked && !hasPrediction ? `
+          <div class="flex" style="margin-top:0.5rem">
+            <input type="number" id="home_${match.id}" placeholder="Local" value="${homeVal}" style="width:80px">
+            <span>-</span>
+            <input type="number" id="away_${match.id}" placeholder="Visitante" value="${awayVal}" style="width:80px">
+            <button data-match="${match.id}" class="savePredictionBtn btn btn-secondary">Guardar</button>
+          </div>
+        ` : ''}
+        
+        ${existingPrediction?.points_earned !== undefined && existingPrediction?.points_earned !== null ? `
+          <div><i class="fas fa-star"></i> Puntos obtenidos: ${existingPrediction.points_earned}</div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  // Asignar eventos con validación de tiempo en cada clic
+  document.querySelectorAll('.savePredictionBtn').forEach(btn => {
+    btn.onclick = async (e) => {
+      const matchId = btn.getAttribute('data-match');
+      const match = matchesList.find(m => m.id === matchId);
+      if (!match) return;
+
+      // Validar que el tiempo límite no haya expirado en este momento
+      const minutosLimite = currentGroup.config.minutos_limite_antes || 30;
+      if (isMatchLocked(match.match_datetime, minutosLimite)) {
+        showModal("Error", "El tiempo límite para pronosticar este partido ya expiró.", true);
+        await loadMatchesAndPredictions(); // refrescar la vista para que desaparezca el botón
+        return;
+      }
+
+      const home = parseInt(document.getElementById(`home_${matchId}`).value);
+      const away = parseInt(document.getElementById(`away_${matchId}`).value);
+      if (isNaN(home) || isNaN(away)) {
+        showModal("Error", "Ingresa números válidos", true);
+        return;
+      }
+
+      const existing = predictionsMap.get(`${matchId}:${currentGroup.id}`);
+      if (existing) {
+        await supabase.from('predictions').update({ predicted_home: home, predicted_away: away }).eq('id', existing.id);
+      } else {
+        await supabase.from('predictions').insert({
+          match_id: matchId,
+          user_id: currentUser.id,
+          group_id: currentGroup.id,
+          predicted_home: home,
+          predicted_away: away
+        });
+      }
+      showModal("Guardado", "Pronóstico guardado");
+      await loadMatchesAndPredictions();
+    };
+  });
+}   
+
+function parseDateWithoutTimezone(dateString) {
+  const clean = dateString
+    .replace('T', ' ')
+    .replace(/\+\d{2}:\d{2}$/, '');
+
+  const [datePart, timePart] = clean.split(' ');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute, second] = timePart.split(':').map(Number);
+
+  return new Date(year, month - 1, day, hour, minute, second);
+}
+
+function isMatchLocked(matchDateISO, minutosLimite) {
+  const matchDate = parseDateWithoutTimezone(matchDateISO);
+  const now = new Date();
+  const limite = new Date(matchDate.getTime() - minutosLimite * 60000);
+  return now > limite;
+}
+
+    // ========== HISTORIAL (PARTIDOS PASADOS) ==========
+    async function loadHistory() {
+      const { data: allMatches } = await supabase
+        .from('matches')
+        .select('*')
+        .order('match_datetime', { ascending: false });
+      // Partidos pasados (fecha menor a hoy, Bolivia)
+      const oldMatches = (allMatches || []).filter(match => !isMatchToday(match.match_datetime) && new Date(match.match_datetime) < new Date());
+      if (oldMatches.length === 0) {
+        document.getElementById("tabHistory").innerHTML = "<div class='card'>No hay partidos anteriores.</div>";
+        return;
+      }
+      const { data: predictions } = await supabase
+        .from('predictions')
+        .select('*')
+        .eq('group_id', currentGroup.id)
+        .eq('user_id', currentUser.id);
+      const predMap = new Map();
+      predictions?.forEach(p => predMap.set(p.match_id, p));
+      const historyHtml = oldMatches.map(match => {
+        const pred = predMap.get(match.id);
+        const hasPred = !!pred;
+        return `
+          <div class="card">
+            <h4>${escapeHtml(match.home_team)} vs ${escapeHtml(match.away_team)}</h4>
+            <div>📅 ${formatDateTime(match.match_datetime)}</div>
+            ${match.result ? `<div>Resultado real: ${match.result.home} - ${match.result.away}</div>` : '<div>Resultado: No finalizado aún</div>'}
+            ${hasPred ? `<div>Tu pronóstico: ${pred.predicted_home} - ${pred.predicted_away}</div>` : '<div>No realizaste pronóstico</div>'}
+            ${hasPred && pred.points_earned !== null ? `<div><i class="fas fa-star"></i> Puntos obtenidos: ${pred.points_earned}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+      document.getElementById("tabHistory").innerHTML = historyHtml;
+    }
+
+    // ========== RANKING ==========
+    async function loadRanking() {
+      const { data: members, error: membersError } = await supabase
+        .from('group_members')
+        .select('user_id')
+        .eq('group_id', currentGroup.id);
+      if (membersError) {
+        console.error("Error al cargar miembros:", membersError);
+        document.getElementById("tabRanking").innerHTML = "<div class='card'>Error al cargar ranking. Verifica las políticas RLS.</div>";
+        return;
+      }
+      if (!members || members.length === 0) {
+        document.getElementById("tabRanking").innerHTML = "<div class='card'>No hay miembros en este grupo.</div>";
+        return;
+      }
+      const userIds = members.map(m => m.user_id);
+      const { data: predictionsAll } = await supabase
+        .from('predictions')
+        .select('user_id, points_earned')
+        .in('user_id', userIds)
+        .eq('group_id', currentGroup.id);
+      const pointsMap = new Map();
+      predictionsAll?.forEach(p => pointsMap.set(p.user_id, (pointsMap.get(p.user_id) || 0) + (p.points_earned || 0)));
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds);
+      const ranking = userIds.map(uid => {
+        const profile = profiles?.find(p => p.id === uid);
+        return { uid, username: profile?.username || uid, points: pointsMap.get(uid) || 0 };
+      }).sort((a,b) => b.points - a.points);
+      const fondoTot = currentGroup.fondo_comun_total || 0;
+      const porcentajes = currentGroup.config.porcentajes_premios;
+      const premios = {
+        1: (fondoTot * (porcentajes['1'] || 0) / 100),
+        2: (fondoTot * (porcentajes['2'] || 0) / 100),
+        3: (fondoTot * (porcentajes['3'] || 0) / 100),
+        4: (fondoTot * (porcentajes['4'] || 0) / 100)
+      };
+      document.getElementById("tabRanking").innerHTML = `
+        <table class="ranking-table">
+          <thead><tr><th>#</th><th>Usuario</th><th>Puntos</th></tr></thead>
+          <tbody>
+            ${ranking.map((u,idx) => `
+              <tr>
+                <td>${idx+1}</td>
+                <td><i class="fas fa-user"></i> ${escapeHtml(u.username)} ${u.uid === currentGroup.created_by ? '<i class="fas fa-crown" style="color:gold"></i>' : ''}</td>
+                <td><strong>${u.points}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="premio-card">
+          <h4><i class="fas fa-trophy"></i> Premios por puesto (Bs.)</h4>
+          <p>🥇 1º: Bs. ${premios[1].toFixed(2)} (${porcentajes['1']}%)</p>
+          <p>🥈 2º: Bs. ${premios[2].toFixed(2)} (${porcentajes['2']}%)</p>
+          <p>🥉 3º: Bs. ${premios[3].toFixed(2)} (${porcentajes['3']}%)</p>
+          <p>🏅 4º: Bs. ${premios[4].toFixed(2)} (${porcentajes['4']}%)</p>
+          <hr><p><strong>Fondo total: Bs. ${fondoTot.toFixed(2)}</strong></p>
+        </div>
+      `;
+    }
+
+    // ========== CHAT EN TIEMPO REAL ==========
+    async function setupChat() {
+      if (chatSubscription) await chatSubscription.unsubscribe();
+      await loadChatMessages();
+      chatSubscription = supabase
+        .channel(`chat_${currentGroup.id}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages', filter: `group_id=eq.${currentGroup.id}` }, async (payload) => {
+          const { data: profile } = await supabase.from('profiles').select('username').eq('id', payload.new.user_id).single();
+          appendMessage({ ...payload.new, username: profile?.username });
+        })
+        .subscribe();
+    }
+
+    async function loadChatMessages() {
+      const { data } = await supabase
+        .from('chat_messages')
+        .select('*, user_id')
+        .eq('group_id', currentGroup.id)
+        .order('created_at', { ascending: true })
+        .limit(100);
+      if (!data) return;
+      const userIds = [...new Set(data.map(m => m.user_id))];
+      const { data: profiles } = await supabase.from('profiles').select('id, username').in('id', userIds);
+      const userMap = new Map();
+      profiles?.forEach(p => userMap.set(p.id, p.username));
+      const container = document.getElementById("chatMessages");
+      container.innerHTML = '';
+      data.forEach(msg => {
+        appendMessage({ ...msg, username: userMap.get(msg.user_id) || msg.user_id });
+      });
+    }
+
+    function appendMessage(msg) {
+      const container = document.getElementById("chatMessages");
+      const div = document.createElement('div');
+      div.className = 'message';
+      const isCreator = currentGroup?.created_by === msg.user_id;
+      div.innerHTML = `<strong>${escapeHtml(msg.username)} ${isCreator ? '<i class="fas fa-crown" style="color:gold"></i>' : ''}</strong> <small>${new Date(msg.created_at).toLocaleTimeString('es-BO', { timeZone: 'America/La_Paz' })}</small><br>${escapeHtml(msg.message)}`;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById("sendChatBtn").onclick = async () => {
+      const input = document.getElementById("chatInput");
+      if (!input.value.trim()) return;
+      await supabase.from('chat_messages').insert({ group_id: currentGroup.id, user_id: currentUser.id, message: input.value });
+      input.value = '';
+    };
+
+    // ========== ADMIN (cargar partidos de cualquier día) ==========
+    // ========== ADMIN (cargar partidos de cualquier día) ==========
+async function loadAdminTab() {
+  if (currentGroup.created_by !== currentUser.id) return;
+  const container = document.getElementById("tabAdmin");
+  const { data: matches } = await supabase.from('matches').select('*').order('match_datetime');
+  
+  // Ordenar: pendientes primero (sin resultado), luego finalizados (con resultado)
+  const sortedMatches = [...(matches || [])].sort((a, b) => {
+    const aFinished = a.result && a.status === 'finished';
+    const bFinished = b.result && b.status === 'finished';
+    if (aFinished === bFinished) return 0;
+    return aFinished ? 1 : -1; // los finalizados van al final
+  });
+  
+  container.innerHTML = `
+    <div class="card">
+      <h3><i class="fas fa-plus-circle"></i> Agregar nuevo partido (cualquier fecha)</h3>
+      <div style="display:flex; flex-direction:column; gap:0.8rem;">
+        <input type="text" id="newHomeTeam" placeholder="Equipo local" class="auth-input">
+        <input type="text" id="newAwayTeam" placeholder="Equipo visitante" class="auth-input">
+        <input type="datetime-local" id="newMatchDatetime" class="auth-input">
+        <button id="addMatchBtn" class="btn btn-primary">Crear partido</button>
+      </div>
+    </div>
+    <h3 style="margin-top:1rem">Resultados de partidos</h3>
+    ${sortedMatches.map(match => `
+      <div class="card">
+        <h4>${escapeHtml(match.home_team)} vs ${escapeHtml(match.away_team)}</h4>
+        <div>📅 ${formatDateTime(match.match_datetime)}</div>
+        <div class="flex" style="margin-top:0.5rem">
+          <input type="number" id="res_home_${match.id}" placeholder="Local" value="${match.result?.home || ''}" style="width:80px">
+          <span>-</span>
+          <input type="number" id="res_away_${match.id}" placeholder="Visitante" value="${match.result?.away || ''}" style="width:80px">
+          <button data-match="${match.id}" class="saveResultBtn btn btn-secondary">Guardar resultado</button>
+        </div>
+        ${match.result ? '<div class="badge">✅ Partido finalizado</div>' : '<div class="badge">⏳ Pendiente</div>'}
+      </div>
+    `).join('')}
+  `;
+  
+  document.getElementById("addMatchBtn")?.addEventListener('click', async () => {
+    const home = document.getElementById("newHomeTeam").value.trim();
+    const away = document.getElementById("newAwayTeam").value.trim();
+    const datetime = document.getElementById("newMatchDatetime").value;
+    if (!home || !away || !datetime) { showModal("Error", "Completa todos los campos", true); return; }
+    const localDate = new Date(datetime);
+    const utcDate = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000);
+    const { error } = await supabase.from('matches').insert({ 
+      home_team: home, 
+      away_team: away, 
+      match_datetime: utcDate.toISOString() 
+    });
+    if (error) showModal("Error", error.message, true);
+    else { showModal("Éxito", "Partido agregado"); loadAdminTab(); loadMatchesAndPredictions(); loadHistory(); }
+  });
+  
+  document.querySelectorAll('.saveResultBtn').forEach(btn => {
+    btn.onclick = async () => {
+      const matchId = btn.getAttribute('data-match');
+      const home = parseInt(document.getElementById(`res_home_${matchId}`).value);
+      const away = parseInt(document.getElementById(`res_away_${matchId}`).value);
+      if (isNaN(home) || isNaN(away)) { showModal("Error", "Ingresa números válidos", true); return; }
+      const { error } = await supabase.from('matches').update({ result: { home, away }, status: 'finished' }).eq('id', matchId);
+      if (error) showModal("Error", error.message, true);
+      else {
+        showModal("Resultado guardado", "Los puntos se han actualizado automáticamente");
+        await loadAdminTab();
+        await loadRanking();
+        await loadMatchesAndPredictions();
+        await loadHistory();
+      }
+    };
+  });
+}
+    // ========== CONFIGURACIÓN Y FONDO COMÚN ==========
+    
+    async function loadSettingsTab() {
+  const isCreator = currentGroup.created_by === currentUser.id;
+  const container = document.getElementById("tabSettings");
+  
+  // Obtener TODAS las transacciones del grupo (sin límite)
+  const { data: transactions, error: txError } = await supabase
+    .from('fund_transactions')
+    .select('*, profiles(username)')
+    .eq('group_id', currentGroup.id)
+    .order('created_at', { ascending: false });
+  
+  if (txError) console.error(txError);
+  
+  const config = currentGroup.config;
+  
+  container.innerHTML = `
+    <div class="card">
+      <h3><i class="fas fa-info-circle"></i> Información del grupo</h3>
+      <p><strong>ID:</strong> <code>${currentGroup.id}</code> <button id="copyIdSettings" class="btn btn-secondary" style="padding:0.2rem 0.8rem">Copiar</button></p>
+      <p><strong>Tipo de pronóstico:</strong> ${config.tipo_pronostico}</p>
+      <p><strong>Puntos:</strong> Ganador=${config.puntos_ganador} | Empate=${config.puntos_empate} | Marcador exacto=${config.puntos_marcador_exacto}</p>
+      <p><strong>Minutos límite antes del partido:</strong> ${config.minutos_limite_antes}</p>
+      <p><strong>Porcentajes premios:</strong> 1° ${config.porcentajes_premios['1']}%, 2° ${config.porcentajes_premios['2']}%, 3° ${config.porcentajes_premios['3']}%, 4° ${config.porcentajes_premios['4']}%</p>
+      
+      ${isCreator ? `
+        <div style="margin-top:1rem; border-top:1px solid #e2e8f0; padding-top:1rem;">
+          <h4><i class="fas fa-edit"></i> Editar reglas del grupo</h4>
+          <div style="display:flex; flex-direction:column; gap:0.8rem;">
+            <div>
+              <label>Puntos por ganador:</label>
+              <input type="number" id="editPuntosGanador" value="${config.puntos_ganador}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Puntos por empate:</label>
+              <input type="number" id="editPuntosEmpate" value="${config.puntos_empate}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Puntos por marcador exacto:</label>
+              <input type="number" id="editPuntosExacto" value="${config.puntos_marcador_exacto}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Minutos límite antes del partido:</label>
+              <input type="number" id="editMinutosLimite" value="${config.minutos_limite_antes}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Porcentaje 1er lugar (%):</label>
+              <input type="number" id="editPorc1" value="${config.porcentajes_premios['1']}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Porcentaje 2do lugar (%):</label>
+              <input type="number" id="editPorc2" value="${config.porcentajes_premios['2']}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Porcentaje 3er lugar (%):</label>
+              <input type="number" id="editPorc3" value="${config.porcentajes_premios['3']}" class="auth-input" style="width:100px">
+            </div>
+            <div>
+              <label>Porcentaje 4to lugar (%):</label>
+              <input type="number" id="editPorc4" value="${config.porcentajes_premios['4']}" class="auth-input" style="width:100px">
+            </div>
+            <button id="saveRulesBtn" class="btn btn-primary">Guardar cambios</button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-dollar-sign"></i> Fondo común (Bs.)</h3>
+      <p><strong>Total acumulado:</strong> Bs. ${(currentGroup.fondo_comun_total || 0).toFixed(2)}</p>
+      ${isCreator ? `
+        <div class="flex" style="flex-direction:column; gap:0.5rem;">
+          <input type="text" id="depositorName" placeholder="Nombre del depositante" class="auth-input">
+          <div class="flex">
+            <input type="number" id="addAmount" placeholder="Monto (Bs.)" step="0.01" style="flex:1">
+            <button id="addFundBtn" class="btn btn-primary">Agregar</button>
+          </div>
+        </div>
+      ` : '<p><i class="fas fa-lock"></i> Solo el creador puede agregar dinero.</p>'}
+      
+      ${transactions && transactions.length > 0 ? `
+        <h4 style="margin-top:1rem">Historial completo de depósitos</h4>
+        <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 0.5rem;">
+          <table style="width:100%; border-collapse: collapse;">
+            <thead>
+              <tr style="border-bottom: 1px solid #cbd5e1;">
+                <th style="text-align:left; padding:0.5rem;">Fecha</th>
+                <th style="text-align:left; padding:0.5rem;">Depositante</th>
+                <th style="text-align:left; padding:0.5rem;">Monto (Bs.)</th>
+                <th style="text-align:left; padding:0.5rem;">Registrado por</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${transactions.map(t => `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding:0.5rem;">${new Date(t.created_at).toLocaleString('es-BO', { timeZone: 'America/La_Paz' })}</td>
+                  <td style="padding:0.5rem;">${escapeHtml(t.description?.replace('Depósito de: ', '') || 'Anónimo')}</td>
+                  <td style="padding:0.5rem;">${t.amount.toFixed(2)}</td>
+                  <td style="padding:0.5rem;">${escapeHtml(t.profiles?.username || t.user_id)}</td>
+                 </tr>
+              `).join('')}
+            </tbody>
+           </table>
+        </div>
+      ` : '<p style="margin-top:1rem">No hay depósitos registrados aún.</p>'}
+    </div>
+  `;
+  
+  // Copiar ID
+  document.getElementById("copyIdSettings")?.addEventListener('click', () => {
+    navigator.clipboard.writeText(currentGroup.id);
+    showModal("Copiado", "ID copiado");
+  });
+  
+  // Guardar cambios de reglas (solo creador)
+  if (isCreator) {
+    document.getElementById("saveRulesBtn")?.addEventListener('click', async () => {
+      const newPuntosGanador = parseInt(document.getElementById("editPuntosGanador").value);
+      const newPuntosEmpate = parseInt(document.getElementById("editPuntosEmpate").value);
+      const newPuntosExacto = parseInt(document.getElementById("editPuntosExacto").value);
+      const newMinutosLimite = parseInt(document.getElementById("editMinutosLimite").value);
+      const newPorc1 = parseInt(document.getElementById("editPorc1").value);
+      const newPorc2 = parseInt(document.getElementById("editPorc2").value);
+      const newPorc3 = parseInt(document.getElementById("editPorc3").value);
+      const newPorc4 = parseInt(document.getElementById("editPorc4").value);
+      
+      if (isNaN(newPuntosGanador) || isNaN(newPuntosEmpate) || isNaN(newPuntosExacto) || isNaN(newMinutosLimite)) {
+        showModal("Error", "Los puntos deben ser números válidos", true);
+        return;
+      }
+      if (newPorc1 + newPorc2 + newPorc3 + newPorc4 !== 100) {
+        showModal("Error", "Los porcentajes deben sumar 100%", true);
+        return;
+      }
+      
+      const newConfig = {
+        ...currentGroup.config,
+        puntos_ganador: newPuntosGanador,
+        puntos_empate: newPuntosEmpate,
+        puntos_marcador_exacto: newPuntosExacto,
+        minutos_limite_antes: newMinutosLimite,
+        porcentajes_premios: {
+          "1": newPorc1,
+          "2": newPorc2,
+          "3": newPorc3,
+          "4": newPorc4
+        }
+      };
+      
+      const { error } = await supabase
+        .from('groups')
+        .update({ config: newConfig })
+        .eq('id', currentGroup.id);
+      
+      if (error) {
+        showModal("Error", error.message, true);
+      } else {
+        currentGroup.config = newConfig;
+        showModal("Éxito", "Reglas del grupo actualizadas");
+        loadSettingsTab();   // refrescar pestaña
+        loadRanking();       // actualizar ranking (premios)
+        loadMatchesAndPredictions(); // actualizar pronósticos (puntos)
+      }
+    });
+    
+    // Agregar fondo común
+    document.getElementById("addFundBtn")?.addEventListener('click', async () => {
+      const amount = parseFloat(document.getElementById("addAmount").value);
+      const depositor = document.getElementById("depositorName").value.trim();
+      if (isNaN(amount) || amount <= 0) { showModal("Error", "Monto inválido", true); return; }
+      if (!depositor) { showModal("Error", "Ingresa el nombre del depositante", true); return; }
+      const { error: txError } = await supabase.from('fund_transactions').insert({ 
+        group_id: currentGroup.id, 
+        user_id: currentUser.id, 
+        amount, 
+        description: `Depósito de: ${depositor}`
+      });
+      if (txError) showModal("Error", txError.message, true);
+      else {
+        const newTotal = (currentGroup.fondo_comun_total || 0) + amount;
+        await supabase.from('groups').update({ fondo_comun_total: newTotal }).eq('id', currentGroup.id);
+        currentGroup.fondo_comun_total = newTotal;
+        document.getElementById("addAmount").value = '';
+        document.getElementById("depositorName").value = '';
+        loadSettingsTab();
+        loadRanking();
+        showModal("Depósito registrado", `Se agregaron Bs. ${amount.toFixed(2)} al fondo común. Depositante: ${depositor}`);
+      }
+    });
+  }
+}
+
+// ========== NAVEGACIÓN ==========
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).classList.remove('hidden');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      const activeTab = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === tabId);
+      if (activeTab) activeTab.classList.add('active');
+      if (tabId === 'ranking') loadRanking();
+      if (tabId === 'history') loadHistory();
+      if (tabId === 'chat') loadChatMessages();
+      if (tabId === 'admin' && currentGroup?.created_by === currentUser.id) loadAdminTab();
+      if (tabId === 'settings') loadSettingsTab();
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.onclick = () => switchTab(tab.getAttribute('data-tab'));
+    });
+
+    loadUser();
+  })();
+</script>
+</body>
+</html>
