@@ -4,20 +4,20 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write   # <--- NUEVO: permite push al branch gh-pages
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Actualizado a v6 para Node.js 24
       - uses: actions/checkout@v6
-      
-      # La acción v4 ya usa Node.js 24
+
       - name: Replace placeholders with secrets
         run: |
           sed -i "s|__SUPABASE_URL__|${{ secrets.SUPABASE_URL }}|g" index.html
           sed -i "s|__SUPABASE_ANON_KEY__|${{ secrets.SUPABASE_ANON_KEY }}|g" index.html
-      
-      # Actualizado a v4.1.0 para Node.js 24 (la v4 ya es compatible)
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4.1.0
         with:
