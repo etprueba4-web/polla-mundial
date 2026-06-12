@@ -219,6 +219,19 @@
     .btn-danger:hover { background: #c43d3d; }
     .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
     .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 50%; }
+    
+    /* NUEVO: Botón de enlace para recuperar contraseña */
+    .btn-link {
+      background: transparent;
+      border: none;
+      color: var(--blue-info);
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0.25rem 0.5rem;
+    }
+    .btn-link:hover { color: #1d4ed8; }
 
     /* ===== USER PILL ===== */
     .user-pill {
@@ -904,7 +917,7 @@
       color: var(--slate);
       margin-bottom: 0.6rem;
     }
-    .modal-content p { font-size: 0.875rem; color: var(--slate-mid); }
+    .modal-content p { font-size: 0.875rem; color: var(--slate-mid); margin-bottom: 0.75rem; }
     .modal-buttons {
       display: flex;
       gap: 0.75rem;
@@ -984,11 +997,20 @@
 
   <!-- AUTH BAR -->
   <div class="auth-bar" id="authBar">
+    <!-- NUEVO: Se agregó el botón "¿Olvidaste tu contraseña?" y un contenedor para el reseteo -->
     <div id="unauthenticated" class="auth-forms">
       <input type="email" id="loginEmail" class="auth-input" placeholder="Correo electrónico">
       <input type="password" id="loginPassword" class="auth-input" placeholder="Contraseña">
       <button id="doLogin" class="btn btn-primary btn-sm"><i class="fas fa-sign-in-alt"></i> Ingresar</button>
       <button id="doSignup" class="btn btn-secondary btn-sm"><i class="fas fa-user-plus"></i> Registrarse</button>
+      <button id="forgotPasswordBtn" class="btn-link"><i class="fas fa-question-circle"></i> ¿Olvidaste tu contraseña?</button>
+    </div>
+    <!-- NUEVO: Panel para establecer nueva contraseña (inicialmente oculto) -->
+    <div id="resetPasswordPanel" class="auth-forms hidden">
+      <input type="password" id="newPasswordInput" class="auth-input" placeholder="Nueva contraseña">
+      <input type="password" id="confirmPasswordInput" class="auth-input" placeholder="Confirmar contraseña">
+      <button id="updatePasswordBtn" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Guardar</button>
+      <button id="cancelResetBtn" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Cancelar</button>
     </div>
     <div id="authenticated" class="hidden">
       <div class="user-pill">
@@ -1098,6 +1120,7 @@
   // DOM refs
   const unauthenticatedDiv = document.getElementById("unauthenticated");
   const authenticatedDiv   = document.getElementById("authenticated");
+  const resetPasswordPanel = document.getElementById("resetPasswordPanel");
   const groupsPanelDiv     = document.getElementById("groupsPanel");
   const groupViewDiv       = document.getElementById("groupView");
   const groupsListDiv      = document.getElementById("groupsList");
@@ -1159,11 +1182,28 @@
   // ========== AUTH ==========
   async function loadUser() {
     const { data: { session } } = await supabase.auth.getSession();
+    
+    // NUEVO: Detectar si el usuario viene de un enlace de recuperación de contraseña
+    const urlParams = new URLSearchParams(window.location.hash.substring(1));
+    const isRecoveryFlow = urlParams.get('type') === 'recovery';
+    
     if (session?.user) {
       currentUser = session.user;
       await ensureProfile();
+      
+      // NUEVO: Si viene de recuperación, mostrar el panel para cambiar contraseña
+      if (isRecoveryFlow) {
+        unauthenticatedDiv.classList.add("hidden");
+        authenticatedDiv.classList.add("hidden");
+        resetPasswordPanel.classList.remove("hidden");
+        groupsPanelDiv.classList.add("hidden");
+        groupViewDiv.classList.add("hidden");
+        return; // Esperar a que el usuario establezca su nueva contraseña
+      }
+      
       authenticatedDiv.classList.remove("hidden");
       unauthenticatedDiv.classList.add("hidden");
+      resetPasswordPanel.classList.add("hidden");
       const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
       document.getElementById("userName").innerText  = username;
       document.getElementById("userAvatar").innerText = username.charAt(0).toUpperCase();
@@ -1174,6 +1214,7 @@
       currentUser = null;
       authenticatedDiv.classList.add("hidden");
       unauthenticatedDiv.classList.remove("hidden");
+      resetPasswordPanel.classList.add("hidden");
       groupsPanelDiv.classList.add("hidden");
       groupViewDiv.classList.add("hidden");
     }
@@ -1185,6 +1226,64 @@
       await supabase.from('profiles').insert({ id: currentUser.id, username });
     }
   }
+  
+  // NUEVO: Manejador para "¿Olvidaste tu contraseña?"
+  document.getElementById("forgotPasswordBtn").onclick = async () => {
+    const email = document.getElementById("loginEmail").value.trim();
+    if (!email) {
+      showModal("Correo requerido", "Por favor ingresa tu correo electrónico en el campo antes de continuar.", true);
+      return;
+    }
+    // La URL de redirección debe ser la misma página para que el usuario regrese aquí
+    const redirectUrl = window.location.origin + window.location.pathname;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
+    });
+    if (error) {
+      showModal("Error", error.message, true);
+    } else {
+      showModal("Correo enviado", `Se ha enviado un enlace de recuperación a ${email}. Revisa tu bandeja de entrada y sigue las instrucciones.`);
+    }
+  };
+
+  // NUEVO: Manejador para actualizar la contraseña después del reseteo
+  document.getElementById("updatePasswordBtn").onclick = async () => {
+    const newPass = document.getElementById("newPasswordInput").value;
+    const confirmPass = document.getElementById("confirmPasswordInput").value;
+    
+    if (!newPass || newPass.length < 6) {
+      showModal("Contraseña muy corta", "La contraseña debe tener al menos 6 caracteres.", true);
+      return;
+    }
+    if (newPass !== confirmPass) {
+      showModal("No coinciden", "Las contraseñas no coinciden. Verifica e intenta de nuevo.", true);
+      return;
+    }
+    
+    const { error } = await supabase.auth.updateUser({ password: newPass });
+    if (error) {
+      showModal("Error", error.message, true);
+    } else {
+      showModal("¡Contraseña actualizada!", "Tu contraseña ha sido cambiada exitosamente. Ya puedes usar tu nueva contraseña para ingresar.");
+      // Limpiar campos y volver a cargar la interfaz normal
+      document.getElementById("newPasswordInput").value = '';
+      document.getElementById("confirmPasswordInput").value = '';
+      resetPasswordPanel.classList.add("hidden");
+      // Limpiar el hash de la URL para evitar confusiones
+      window.history.replaceState(null, '', window.location.pathname);
+      await loadUser();
+    }
+  };
+
+  // NUEVO: Cancelar el reseteo de contraseña
+  document.getElementById("cancelResetBtn").onclick = () => {
+    document.getElementById("newPasswordInput").value = '';
+    document.getElementById("confirmPasswordInput").value = '';
+    resetPasswordPanel.classList.add("hidden");
+    window.history.replaceState(null, '', window.location.pathname);
+    loadUser();
+  };
+
   document.getElementById("doLogin").onclick = async () => {
     const { error } = await supabase.auth.signInWithPassword({
       email: document.getElementById("loginEmail").value,
