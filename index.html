@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Polla Mundialera Pro</title>
+  <link rel="icon" type="image/png" href="https://mexicofanshop.com/cdn/shop/files/JD8031_1_HARDWARE_Photography_Front-Center-View_transparent.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+  <style>
+    /* ===== TOKENS ===== */
+    :root {
+      --green-deep:    #1a4a2e;
+      --green-mid:     #256339;
+      --green-bright:  #2e7d46;
+      --gold:          #f4c430;
+      --gold-light:    #fdf3c0;
+      --cream:         #f5f0e8;
+      --cream-dark:    #ede7d9;
+      --slate:         #2d2d2d;
+      --slate-mid:     #4a4a4a;
+      --slate-light:   #7a7a7a;
+      --white:         #fafaf7;
+      --red:           #d94f4f;
+      --red-light:     #fdeaea;
+      --blue-info:     #3b73c8;
+      --border:        #ddd8ce;
+      --shadow-sm:     0 2px 6px rgba(0,0,0,0.07);
+      --shadow-md:     0 8px 24px rgba(0,0,0,0.1);
+      --shadow-lg:     0 20px 48px rgba(0,0,0,0.14);
+      --radius-sm:     8px;
+      --radius-md:     14px;
+      --radius-lg:     22px;
+      --font-display:  'Space Grotesk', system-ui, sans-serif;
+      --font-body:     'Inter', system-ui, sans-serif;
+      --font-mono:     'Space Mono', monospace;
+    }
+
+    /* ===== RESET ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--green-deep);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(46,125,70,0.5), transparent),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 40px,
+          rgba(255,255,255,0.025) 40px,
+          rgba(255,255,255,0.025) 41px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 40px,
+          rgba(255,255,255,0.025) 40px,
+          rgba(255,255,255,0.025) 41px
+        );
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 1.5rem;
+      color: var(--slate);
+    }
+
+    /* ===== SHELL ===== */
+    .shell {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: var(--green-deep);
+      padding: 1.4rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::after {
+      content: "⚽";
+      position: absolute;
+      right: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%) rotate(15deg);
+      font-size: 5rem;
+      opacity: 0.07;
+      pointer-events: none;
+    }
+    .header-left { display: flex; align-items: center; gap: 0.8rem; }
+    .header-icon {
+      width: 42px;
+      height: 42px;
+      background: var(--gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon svg { width: 22px; height: 22px; fill: var(--green-deep); }
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .header p {
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.55);
+      margin-top: 0.15rem;
+    }
+
+    /* ===== AUTH BAR ===== */
+    .auth-bar {
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .auth-forms {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* ===== INPUTS ===== */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      padding: 0.6rem 0.9rem;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: #fff;
+      color: var(--slate);
+      transition: border-color 0.18s, box-shadow 0.18s;
+      width: 100%;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--green-bright);
+      box-shadow: 0 0 0 3px rgba(46,125,70,0.15);
+    }
+    input.auth-input { width: auto; min-width: 160px; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.55rem 1.1rem;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--green-deep);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: var(--green-mid);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(26,74,46,0.3);
+    }
+    .btn-secondary {
+      background: #fff;
+      color: var(--slate);
+      border: 1.5px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: var(--cream);
+      border-color: #bbb;
+    }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--green-deep);
+    }
+    .btn-gold:hover {
+      background: #e6b820;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(244,196,48,0.35);
+    }
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+    .btn-danger:hover { background: #c43d3d; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+    .btn-icon { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 50%; }
+
+    /* ===== USER PILL ===== */
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: var(--green-deep);
+      padding: 0.3rem 0.9rem 0.3rem 0.3rem;
+      border-radius: 100px;
+    }
+    .avatar {
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      color: var(--green-deep);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .user-pill span {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* ===== MAIN ===== */
+    .main { padding: 1.75rem 2rem; }
+
+    /* ===== SECTION HEADING ===== */
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .section-heading h2 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--slate);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section-heading h2 i { color: var(--green-bright); }
+
+    /* ===== GROUPS GRID ===== */
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ===== GROUP CARD ===== */
+    .group-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.2rem;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .group-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 4px;
+      background: var(--green-bright);
+      border-radius: 4px 0 0 4px;
+    }
+    .group-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--green-bright);
+    }
+    .group-card h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+    }
+    .group-card p {
+      font-size: 0.82rem;
+      color: var(--slate-mid);
+      padding-left: 0.5rem;
+      margin-bottom: 0.3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .group-card p i { color: var(--green-bright); width: 14px; }
+
+    /* ===== GROUP ID CHIP ===== */
+    .id-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 0.25rem 0.65rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--slate-mid);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin: 0.4rem 0 0.5rem 0.5rem;
+    }
+    .id-chip:hover { background: var(--cream-dark); color: var(--slate); }
+    .id-chip i { font-size: 0.65rem; }
+
+    /* ===== JOIN GROUP BOX ===== */
+    .join-box {
+      background: var(--cream);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.2rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .join-box input { flex: 1; min-width: 180px; }
+
+    /* ===== TABS ===== */
+    .tabs-wrapper {
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      color: var(--slate-light);
+      border-bottom: 2.5px solid transparent;
+      white-space: nowrap;
+      transition: all 0.18s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .tab:hover { color: var(--green-bright); }
+    .tab.active {
+      color: var(--green-deep);
+      border-bottom-color: var(--green-deep);
+    }
+    .tab i { font-size: 0.8rem; }
+
+    /* ===== GROUP VIEW HEADER ===== */
+    .group-view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .group-view-header h2 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--slate);
+    }
+
+    /* ===== MATCH TICKET CARD ===== */
+    .match-ticket {
+      background: #fff;
+      border-radius: var(--radius-md);
+      border: 1.5px solid var(--border);
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+      margin-bottom: 0.9rem;
+    }
+    .match-ticket:hover { box-shadow: var(--shadow-sm); }
+
+    .ticket-header {
+      background: var(--green-deep);
+      padding: 0.5rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ticket-header span {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .ticket-header .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 0.4rem;
+    }
+    .status-open .status-dot { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
+    .status-locked .status-dot { background: var(--gold); }
+    .status-finished .status-dot { background: #94a3b8; }
+
+    .ticket-body {
+      padding: 0.9rem 1.2rem;
+    }
+
+    .teams-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .team-name {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--slate);
+      flex: 1;
+    }
+    .team-name.away { text-align: right; }
+    .vs-badge {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--slate-light);
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    /* ===== SCOREBOARD INPUT ===== */
+    .score-input-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0;
+    }
+    .score-digit-input {
+      width: 56px !important;
+      height: 56px;
+      font-family: var(--font-display) !important;
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      text-align: center;
+      border: 2px solid var(--border) !important;
+      border-radius: var(--radius-sm) !important;
+      background: var(--slate) !important;
+      color: var(--gold) !important;
+      padding: 0 !important;
+      letter-spacing: 0.02em;
+      transition: border-color 0.18s, box-shadow 0.18s !important;
+    }
+    .score-digit-input:focus {
+      border-color: var(--gold) !important;
+      box-shadow: 0 0 0 3px rgba(244,196,48,0.2), inset 0 0 8px rgba(244,196,48,0.1) !important;
+    }
+    .score-dash {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--slate-light);
+    }
+
+    /* ===== PREDICTION BADGE ===== */
+    .pred-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #ecfdf5;
+      border: 1.5px solid #6ee7b7;
+      border-radius: 100px;
+      padding: 0.3rem 0.8rem;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #065f46;
+      margin-top: 0.4rem;
+    }
+    .pred-badge i { color: #10b981; }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #f1f5f9;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 100px;
+      padding: 0.3rem 0.8rem;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--slate);
+      margin-top: 0.4rem;
+    }
+
+    .points-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--gold-light);
+      border: 1.5px solid var(--gold);
+      border-radius: 100px;
+      padding: 0.3rem 0.8rem;
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #78350f;
+      margin-top: 0.4rem;
+    }
+
+    .locked-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fef9c3;
+      border-radius: 100px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #854d0e;
+      margin-top: 0.4rem;
+    }
+
+    .no-pred-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--red-light);
+      border-radius: 100px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #7f1d1d;
+      margin-top: 0.4rem;
+    }
+
+    .ticket-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0.6rem 1.2rem;
+      border-top: 1.5px dashed var(--border);
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--slate-light);
+    }
+    .empty-state i {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      display: block;
+      color: var(--border);
+    }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ===== RANKING TABLE ===== */
+    .ranking-wrap { overflow: hidden; border-radius: var(--radius-md); border: 1.5px solid var(--border); }
+    .ranking-table { width: 100%; border-collapse: collapse; }
+    .ranking-table thead tr { background: var(--green-deep); }
+    .ranking-table th {
+      padding: 0.7rem 1rem;
+      font-family: var(--font-display);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.75);
+      text-align: left;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .ranking-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid var(--cream-dark);
+      font-size: 0.875rem;
+      color: var(--slate);
+    }
+    .ranking-table tbody tr:last-child td { border-bottom: none; }
+    .ranking-table tbody tr:hover td { background: var(--cream); }
+    .rank-pos {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--slate-light);
+    }
+    .rank-pos.gold { color: #d97706; }
+    .rank-pos.silver { color: #6b7280; }
+    .rank-pos.bronze { color: #92400e; }
+    .pts-cell {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--green-deep);
+    }
+    .crown-icon { color: var(--gold); font-size: 0.85rem; margin-left: 0.3rem; }
+
+    /* ===== PRIZE CARD ===== */
+    .prize-card {
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 100%);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1.4rem;
+      margin-top: 1rem;
+      color: #fff;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+    .prize-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      padding: 0.7rem 0.9rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .prize-item .pos {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+    .prize-item .amount {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+    .prize-item .pct {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.45);
+    }
+    .prize-total {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding-top: 0.5rem;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.7);
+    }
+    .prize-total strong { color: var(--gold); font-family: var(--font-display); font-size: 1rem; }
+
+    /* ===== CHAT ===== */
+    .chat-container {
+      height: 400px;
+      overflow-y: auto;
+      background: var(--cream);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .message {
+      background: #fff;
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.85rem;
+      box-shadow: var(--shadow-sm);
+      border-left: 3px solid var(--green-bright);
+      font-size: 0.875rem;
+    }
+    .message.own { border-left-color: var(--gold); }
+    .message strong {
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      color: var(--green-deep);
+    }
+    .message small { color: var(--slate-light); font-size: 0.72rem; margin-left: 0.4rem; }
+    .chat-input-row {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .chat-input-row input { flex: 1; }
+
+    /* ===== HISTORY CARDS ===== */
+    .history-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 0.75rem;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.4rem 1rem;
+      align-items: start;
+    }
+    .history-card .match-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--slate);
+      grid-column: 1 / -1;
+      margin-bottom: 0.2rem;
+    }
+    .history-card .date-label {
+      font-size: 0.78rem;
+      color: var(--slate-light);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    /* ===== ADMIN ===== */
+    .admin-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .admin-card h3 {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .admin-card h3 i { color: var(--green-bright); }
+    .form-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .result-row .score-digit-input {
+      width: 48px !important;
+      height: 48px;
+      font-size: 1.2rem !important;
+    }
+
+    /* ===== SETTINGS ===== */
+    .settings-section {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 0.9rem;
+    }
+    .settings-section h3 {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .settings-section h3 i { color: var(--green-bright); }
+    .config-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--cream-dark);
+      font-size: 0.875rem;
+    }
+    .config-row:last-child { border-bottom: none; }
+    .config-row label { color: var(--slate-mid); }
+    .config-row strong { color: var(--slate); font-weight: 600; }
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+    .edit-grid label {
+      font-size: 0.85rem;
+      color: var(--slate-mid);
+      align-self: center;
+    }
+    .edit-grid input {
+      width: 90px;
+    }
+    .fund-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .fund-table th {
+      background: var(--cream);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--slate-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1.5px solid var(--border);
+    }
+    .fund-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--cream-dark);
+      color: var(--slate);
+    }
+    .fund-total-row {
+      background: var(--green-deep);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.9rem;
+      color: #fff;
+    }
+    .fund-total-row span {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+    }
+    .fund-total-row strong {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ===== MODAL ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      max-width: 380px;
+      width: 90%;
+      padding: 1.75rem;
+      box-shadow: var(--shadow-lg);
+      animation: popIn 0.2s cubic-bezier(.34,1.56,.64,1);
+    }
+    .modal-content h3 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--slate);
+      margin-bottom: 0.6rem;
+    }
+    .modal-content p { font-size: 0.875rem; color: var(--slate-mid); }
+    .modal-buttons {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 1.4rem;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ===== HELPERS ===== */
+    .hidden { display: none !important; }
+    .mt-1 { margin-top: 0.4rem; }
+    .mt-2 { margin-top: 0.85rem; }
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+    /* ===== ESTILOS PARA TABLA DE PREDICCIONES DE TODOS ===== */
+    .all-predictions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+    }
+    .all-predictions-table th {
+      text-align: left;
+      padding: 0.4rem 0.5rem;
+      background: var(--cream-dark);
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--slate-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .all-predictions-table td {
+      padding: 0.35rem 0.5rem;
+      border-bottom: 1px solid var(--cream-dark);
+      color: var(--slate);
+    }
+    .all-predictions-table td:last-child,
+    .all-predictions-table th:last-child {
+      text-align: center;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      body { padding: 0.5rem; }
+      .main { padding: 1.2rem 1rem; }
+      .header { padding: 1.1rem 1.2rem; }
+      .auth-bar { padding: 0.75rem 1rem; }
+      .group-view-header { padding: 0.75rem 1rem; }
+      .tabs-wrapper { padding: 0 0.75rem; }
+      .score-digit-input { width: 48px !important; height: 48px; font-size: 1.25rem !important; }
+      .team-name { font-size: 0.875rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 2c1.51 0 2.929.376 4.175 1.04l-2.12 3.67-2.055-.748-2.055.748-2.12-3.67A7.963 7.963 0 0 1 12 4zm-5.96 2.826 2.26 3.912-.946 2.91H5.24A7.966 7.966 0 0 1 4 12c0-1.893.658-3.631 1.75-5zm11.92 0A8.006 8.006 0 0 1 20 12c0 1.1-.223 2.148-.624 3.104h-.002l-3.068-.356-.946-2.91 2.26-3.912zM8.646 13.648l2.713.313.641 1.977-1.637 2.254A7.972 7.972 0 0 1 6.26 15.62l2.386-.272zm6.708 0 2.387.272a7.972 7.972 0 0 1-4.103 2.572l-1.637-2.254.641-1.977 2.712-.313zM12 16.5l1.285 1.77A7.965 7.965 0 0 1 12 18.5a7.965 7.965 0 0 1-1.285-.23L12 16.5z"/></svg>
+      </div>
+      <div>
+        <h1>Polla Mundialera Pro</h1>
+        <p>Pronósticos · Ranking · Chat en tiempo real</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH BAR -->
+  <div class="auth-bar" id="authBar">
+    <div id="unauthenticated" class="auth-forms">
+      <input type="email" id="loginEmail" class="auth-input" placeholder="Correo electrónico">
+      <input type="password" id="loginPassword" class="auth-input" placeholder="Contraseña">
+      <button id="doLogin" class="btn btn-primary btn-sm"><i class="fas fa-sign-in-alt"></i> Ingresar</button>
+      <button id="doSignup" class="btn btn-secondary btn-sm"><i class="fas fa-user-plus"></i> Registrarse</button>
+    </div>
+    <div id="authenticated" class="hidden">
+      <div class="user-pill">
+        <div class="avatar" id="userAvatar"></div>
+        <span id="userName"></span>
+        <button id="logoutBtn" class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:none;padding:0.3rem 0.7rem;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="appContent">
+
+    <!-- GROUPS PANEL -->
+    <div id="groupsPanel">
+      <div class="section-heading">
+        <h2><i class="fas fa-users"></i> Mis grupos</h2>
+        <button id="showCreateGroupModalBtn" class="btn btn-primary btn-sm">
+          <i class="fas fa-plus"></i> Nuevo grupo
+        </button>
+      </div>
+      <div id="groupsList" class="groups-grid"></div>
+
+      <div class="join-box" style="margin-top:0.5rem;">
+        <input type="text" id="joinGroupId" placeholder="Pega el ID del grupo para unirte">
+        <button id="joinGroupBtn" class="btn btn-gold btn-sm"><i class="fas fa-user-plus"></i> Unirse</button>
+      </div>
+    </div>
+
+    <!-- GROUP VIEW -->
+    <div id="groupView" class="hidden" style="margin: -1.75rem -2rem 0;">
+
+      <!-- Group view header -->
+      <div class="group-view-header">
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <button id="backToGroupsBtn" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Grupos
+          </button>
+          <h2 id="groupNameHeader"></h2>
+          <div id="groupIdDisplay" class="id-chip"><i class="fas fa-fingerprint"></i> <span id="groupIdText">cargando…</span> <i class="fas fa-copy"></i></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs-wrapper">
+        <div class="tabs" id="groupTabs">
+          <div class="tab active" data-tab="predictions"><i class="fas fa-chart-bar"></i> Pronósticos</div>
+          <div class="tab" data-tab="allpredictions"><i class="fas fa-users"></i> Todos</div>
+          <div class="tab" data-tab="ranking"><i class="fas fa-trophy"></i> Ranking</div>
+          <div class="tab" data-tab="history"><i class="fas fa-history"></i> Historial</div>
+          <div class="tab" data-tab="chat"><i class="fas fa-comments"></i> Chat</div>
+          <div class="tab" data-tab="admin" id="adminTab" style="display:none;"><i class="fas fa-cog"></i> Admin</div>
+          <div class="tab" data-tab="settings"><i class="fas fa-sliders-h"></i> Config</div>
+        </div>
+      </div>
+
+      <!-- Tab contents -->
+      <div style="padding: 1.5rem 2rem;">
+        <div id="tabPredictions" class="tab-content"></div>
+        <div id="tabAllpredictions" class="tab-content hidden"></div>
+        <div id="tabRanking" class="tab-content hidden"></div>
+        <div id="tabHistory" class="tab-content hidden"></div>
+
+        <div id="tabChat" class="tab-content hidden">
+          <div id="chatMessages" class="chat-container"></div>
+          <div class="chat-input-row">
+            <input type="text" id="chatInput" placeholder="Escribe un mensaje…">
+            <button id="sendChatBtn" class="btn btn-primary btn-sm"><i class="fas fa-paper-plane"></i> Enviar</button>
+          </div>
+        </div>
+
+        <div id="tabAdmin" class="tab-content hidden"></div>
+        <div id="tabSettings" class="tab-content hidden"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- MODAL -->
+<div id="globalModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Mensaje</h3>
+    <p id="modalMessage"></p>
+    <div class="modal-buttons">
+      <button id="modalConfirmBtn" class="btn btn-primary btn-sm">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ========== SUPABASE CONFIG ==========
+  const SUPABASE_URL = "https://rtbhxguwqxvqhyjgbzlg.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_Ht7ahyUKK1KaIAqBdmPvvg_ARKUrexs";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentGroup = null;
+  let groupsList = [];
+  let matchesList = [];
+  let predictionsMap = new Map();
+  let chatSubscription = null;
+
+  // DOM refs
+  const unauthenticatedDiv = document.getElementById("unauthenticated");
+  const authenticatedDiv   = document.getElementById("authenticated");
+  const groupsPanelDiv     = document.getElementById("groupsPanel");
+  const groupViewDiv       = document.getElementById("groupView");
+  const groupsListDiv      = document.getElementById("groupsList");
+  const groupNameHeader    = document.getElementById("groupNameHeader");
+  const groupIdDisplay     = document.getElementById("groupIdDisplay");
+  const adminTab           = document.getElementById("adminTab");
+  const modal              = document.getElementById("globalModal");
+  const modalTitle         = document.getElementById("modalTitle");
+  const modalMessage       = document.getElementById("modalMessage");
+  const modalConfirmBtn    = document.getElementById("modalConfirmBtn");
+
+  // ---- Helpers ----
+  function showModal(title, message, isError = false) {
+    modalTitle.innerText  = title;
+    modalMessage.innerText = message;
+    modal.style.display   = "flex";
+    modalTitle.style.color = isError ? "#dc2626" : "#1a4a2e";
+    modalConfirmBtn.onclick = () => { modal.style.display = "none"; };
+  }
+  function escapeHtml(s) {
+    if (!s) return '';
+    return s.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);
+  }
+  function formatDateTime(dateString) {
+    if (!dateString) return '';
+    const [fecha, hora] = dateString.split('T');
+    return `${fecha.split('-').reverse().join('/')} ${hora.slice(0,5)}`;
+  }
+  function getCurrentBoliviaDate() {
+    const now = new Date();
+    const d   = new Date(now.toLocaleString('en-US', { timeZone: 'America/La_Paz' }));
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function isMatchToday(matchDateISO) {
+    const md = new Date(matchDateISO);
+    const mb = new Date(md.toLocaleString('en-US', { timeZone: 'America/La_Paz' }));
+    mb.setHours(0,0,0,0);
+    return mb.getTime() === getCurrentBoliviaDate().getTime();
+  }
+  function parseDateWithoutTimezone(dateString) {
+    const clean = dateString.replace('T',' ').replace(/\+\d{2}:\d{2}$/,'');
+    const [dp, tp] = clean.split(' ');
+    const [y,mo,d] = dp.split('-').map(Number);
+    const [h,mi,s=0] = tp.split(':').map(Number);
+    return new Date(y, mo-1, d, h, mi, s);
+  }
+  function isMatchLocked(matchDateISO, minutosLimite) {
+    const md    = parseDateWithoutTimezone(matchDateISO);
+    const limite = new Date(md.getTime() - minutosLimite*60000);
+    return new Date() > limite;
+  }
+  function getMatchStatus(match, minutosLimite) {
+    if (match.result && match.status === 'finished') return 'finished';
+    if (isMatchLocked(match.match_datetime, minutosLimite)) return 'locked';
+    return 'open';
+  }
+
+  // ========== AUTH ==========
+  async function loadUser() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      currentUser = session.user;
+      await ensureProfile();
+      authenticatedDiv.classList.remove("hidden");
+      unauthenticatedDiv.classList.add("hidden");
+      const username = currentUser.user_metadata?.username || currentUser.email.split('@')[0];
+      document.getElementById("userName").innerText  = username;
+      document.getElementById("userAvatar").innerText = username.charAt(0).toUpperCase();
+      await loadGroups();
+      groupsPanelDiv.classList.remove("hidden");
+      groupViewDiv.classList.add("hidden");
+    } else {
+      currentUser = null;
+      authenticatedDiv.classList.add("hidden");
+      unauthenticatedDiv.classList.remove("hidden");
+      groupsPanelDiv.classList.add("hidden");
+      groupViewDiv.classList.add("hidden");
+    }
+  }
+  async function ensureProfile() {
+    const { data } = await supabase.from('profiles').select('username').eq('id', currentUser.id).maybeSingle();
+    if (!data) {
+      const username = currentUser.email.split('@')[0] + Math.floor(Math.random()*1000);
+      await supabase.from('profiles').insert({ id: currentUser.id, username });
+    }
+  }
+  document.getElementById("doLogin").onclick = async () => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById("loginEmail").value,
+      password: document.getElementById("loginPassword").value
+    });
+    if (error) showModal("Error al ingresar", error.message, true);
+    else loadUser();
+  };
+  document.getElementById("doSignup").onclick = async () => {
+    const { error } = await supabase.auth.signUp({
+      email: document.getElementById("loginEmail").value,
+      password: document.getElementById("loginPassword").value
+    });
+    if (error) showModal("Error", error.message, true);
+    else showModal("¡Registro exitoso!", "Ya puedes iniciar sesión con tu cuenta.");
+  };
+  document.getElementById("logoutBtn").onclick = async () => {
+    await supabase.auth.signOut();
+    loadUser();
+  };
+
+  // ========== GROUPS ==========
+  async function loadGroups() {
+    const { data: memberships } = await supabase
+      .from('group_members').select('group_id').eq('user_id', currentUser.id);
+    if (!memberships?.length) {
+      groupsListDiv.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <i class="fas fa-users"></i>
+          <p>No estás en ningún grupo todavía.</p>
+          <p style="margin-top:0.4rem;">Crea uno nuevo o únete con un ID.</p>
+        </div>`;
+      return;
+    }
+    const groupIds = memberships.map(m => m.group_id);
+    const { data: groups } = await supabase.from('groups').select('*').in('id', groupIds);
+    groupsList = groups || [];
+    renderGroupsList();
+  }
+
+  function renderGroupsList() {
+    if (!groupsList.length) {
+      groupsListDiv.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-users"></i><p>Sin grupos</p></div>`;
+      return;
+    }
+    groupsListDiv.innerHTML = groupsList.map(g => `
+      <div class="group-card">
+        <h3><i class="fas fa-shield-alt" style="color:var(--green-bright); margin-right:0.35rem; font-size:0.85rem;"></i>${escapeHtml(g.name)}</h3>
+        <p><i class="fas fa-coins"></i> Fondo: <strong>Bs. ${(g.fondo_comun_total||0).toFixed(2)}</strong></p>
+        <div class="id-chip" data-id="${g.id}"><i class="fas fa-fingerprint"></i> ${g.id.slice(0,12)}… <i class="fas fa-copy"></i></div>
+        <button data-group-id="${g.id}" class="selectGroupBtn btn btn-primary btn-sm" style="margin-top:0.5rem; width:100%; justify-content:center;">
+          Acceder <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    `).join('');
+    document.querySelectorAll('.id-chip').forEach(el => {
+      el.onclick = e => {
+        const id = el.getAttribute('data-id') || el.innerText.trim();
+        navigator.clipboard.writeText(id);
+        showModal("Copiado", "ID copiado al portapapeles.");
+        e.stopPropagation();
+      };
+    });
+    document.querySelectorAll('.selectGroupBtn').forEach(btn => {
+      btn.onclick = () => selectGroup(btn.getAttribute('data-group-id'));
+    });
+  }
+
+  async function selectGroup(groupId) {
+    const group = groupsList.find(g => g.id === groupId);
+    if (!group) return;
+    currentGroup = group;
+    groupNameHeader.innerText = group.name;
+    document.getElementById("groupIdText").innerText = group.id.slice(0,14) + '…';
+    groupIdDisplay.onclick = () => { navigator.clipboard.writeText(group.id); showModal("Copiado","ID copiado"); };
+    adminTab.style.display = (group.created_by === currentUser.id) ? "flex" : "none";
+    await loadMatchesAndPredictions();
+    await loadAllPredictions();
+    await loadRanking();
+    await loadHistory();
+    await setupChat();
+    await loadAdminTab();
+    await loadSettingsTab();
+    groupsPanelDiv.classList.add("hidden");
+    groupViewDiv.classList.remove("hidden");
+    switchTab('predictions');
+  }
+
+  document.getElementById("backToGroupsBtn").onclick = () => {
+    if (chatSubscription) chatSubscription.unsubscribe();
+    groupViewDiv.classList.add("hidden");
+    groupsPanelDiv.classList.remove("hidden");
+    loadGroups();
+  };
+
+  document.getElementById("showCreateGroupModalBtn").onclick = () => {
+    const name = prompt("Nombre del nuevo grupo:");
+    if (!name) return;
+    const config = {
+      tipo_pronostico: "marcador",
+      puntos_ganador: 3, puntos_empate: 1, puntos_marcador_exacto: 5,
+      minutos_limite_antes: 30,
+      porcentajes_premios: { "1":50,"2":30,"3":15,"4":5 }
+    };
+    supabase.from('groups').insert({ name, created_by: currentUser.id, config }).select().then(async ({data,error}) => {
+      if (error) showModal("Error", error.message, true);
+      else {
+        await supabase.from('group_members').insert({ group_id: data[0].id, user_id: currentUser.id, role: 'admin' }).catch(()=>{});
+        await loadGroups();
+        showModal("¡Grupo creado!", `"${name}" ha sido creado.\nID: ${data[0].id}\n\nCompartí este ID para que otros se unan.`);
+      }
+    });
+  };
+
+  document.getElementById("joinGroupBtn").onclick = async () => {
+    const groupId = document.getElementById("joinGroupId").value.trim();
+    if (!groupId) return;
+    const { data: group } = await supabase.from('groups').select('id').eq('id', groupId).maybeSingle();
+    if (!group) { showModal("No encontrado", "El grupo no existe o no tienes permiso.", true); return; }
+    const { error } = await supabase.from('group_members').insert({ group_id: groupId, user_id: currentUser.id });
+    if (error) showModal("Error", error.message, true);
+    else { await loadGroups(); document.getElementById("joinGroupId").value=''; showModal("¡Bienvenido!", "Te has unido al grupo exitosamente."); }
+  };
+
+  // ========== PREDICTIONS ==========
+  async function loadMatchesAndPredictions() {
+    const { data: matches } = await supabase.from('matches').select('*').order('match_datetime', { ascending: true });
+    matchesList = (matches||[]).filter(m => isMatchToday(m.match_datetime));
+    const { data: predictions } = await supabase.from('predictions').select('*')
+      .eq('group_id', currentGroup.id).eq('user_id', currentUser.id);
+    predictionsMap.clear();
+    predictions.forEach(p => predictionsMap.set(`${p.match_id}:${currentGroup.id}`, p));
+    renderPredictionsTab();
+  }
+
+  function renderPredictionsTab() {
+    const container = document.getElementById("tabPredictions");
+    if (!currentGroup?.config) { container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando…</p></div>`; return; }
+    if (!matchesList.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No hay partidos programados para hoy.</p></div>`;
+      return;
+    }
+    const now           = new Date();
+    const minutosLimite = currentGroup.config.minutos_limite_antes || 30;
+    container.innerHTML = matchesList.map(match => {
+      const status      = getMatchStatus(match, minutosLimite);
+      const existingPred = predictionsMap.get(`${match.id}:${currentGroup.id}`);
+      const homeVal      = existingPred?.predicted_home ?? '';
+      const awayVal      = existingPred?.predicted_away ?? '';
+      const statusLabel  = status === 'open' ? 'Abierto' : status === 'locked' ? 'Cerrado' : 'Finalizado';
+      return `
+        <div class="match-ticket">
+          <div class="ticket-header status-${status}">
+            <span><span class="status-dot"></span>${statusLabel}</span>
+            <span><i class="far fa-clock" style="margin-right:0.3rem;"></i>${formatDateTime(match.match_datetime)}</span>
+          </div>
+          <div class="ticket-body">
+            <div class="teams-row">
+              <span class="team-name">${escapeHtml(match.home_team)}</span>
+              <span class="vs-badge">VS</span>
+              <span class="team-name away">${escapeHtml(match.away_team)}</span>
+            </div>
+            ${status === 'open' && !existingPred ? `
+              <div class="score-input-row">
+                <input type="number" id="home_${match.id}" class="score-digit-input" placeholder="0" value="${homeVal}" min="0" max="99">
+                <span class="score-dash">—</span>
+                <input type="number" id="away_${match.id}" class="score-digit-input" placeholder="0" value="${awayVal}" min="0" max="99">
+              </div>
+            ` : ''}
+            <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.35rem;">
+              ${existingPred ? `<div class="pred-badge"><i class="fas fa-check-circle"></i> Tu pronóstico: ${homeVal} – ${awayVal}</div>` : ''}
+              ${match.result ? `<div class="result-badge"><i class="fas fa-futbol"></i> Resultado: ${match.result.home} – ${match.result.away}</div>` : ''}
+              ${status === 'locked' && !existingPred ? `<div class="no-pred-banner"><i class="fas fa-times-circle"></i> Sin pronóstico</div>` : ''}
+              ${status === 'locked' ? `<div class="locked-banner"><i class="fas fa-lock"></i> Tiempo límite pasado</div>` : ''}
+              ${existingPred?.points_earned != null ? `<div class="points-badge"><i class="fas fa-star"></i> ${existingPred.points_earned} pts</div>` : ''}
+            </div>
+          </div>
+          ${status === 'open' && !existingPred ? `
+            <div class="ticket-footer">
+              <button data-match="${match.id}" class="savePredictionBtn btn btn-gold btn-sm">
+                <i class="fas fa-save"></i> Guardar pronóstico
+              </button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('.savePredictionBtn').forEach(btn => {
+      btn.onclick = async () => {
+        const matchId = btn.getAttribute('data-match');
+        const match   = matchesList.find(m => m.id === matchId);
+        if (!match) return;
+        if (isMatchLocked(match.match_datetime, currentGroup.config.minutos_limite_antes||30)) {
+          showModal("Tiempo agotado", "El límite para pronosticar ya expiró.", true);
+          await loadMatchesAndPredictions(); return;
+        }
+        const home = parseInt(document.getElementById(`home_${matchId}`).value);
+        const away = parseInt(document.getElementById(`away_${matchId}`).value);
+        if (isNaN(home)||isNaN(away)) { showModal("Error", "Ingresá números válidos.", true); return; }
+        const existing = predictionsMap.get(`${matchId}:${currentGroup.id}`);
+        if (existing) {
+          await supabase.from('predictions').update({ predicted_home: home, predicted_away: away }).eq('id', existing.id);
+        } else {
+          await supabase.from('predictions').insert({
+            match_id: matchId, user_id: currentUser.id, group_id: currentGroup.id,
+            predicted_home: home, predicted_away: away
+          });
+        }
+        showModal("¡Listo!", "Tu pronóstico fue guardado.");
+        await loadMatchesAndPredictions();
+      };
+    });
+  }
+
+  // ========== NUEVA FUNCIÓN: CARGAR PREDICCIONES DE TODOS LOS MIEMBROS ==========
+  async function loadAllPredictions() {
+    const container = document.getElementById("tabAllpredictions");
+    if (!currentGroup?.config) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando…</p></div>`;
+      return;
+    }
+    if (!matchesList.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-calendar-times"></i><p>No hay partidos programados para hoy.</p></div>`;
+      return;
+    }
+
+    const { data: members } = await supabase
+      .from('group_members')
+      .select('user_id')
+      .eq('group_id', currentGroup.id);
+    if (!members?.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i><p>No hay miembros en el grupo.</p></div>`;
+      return;
+    }
+
+    const userIds = members.map(m => m.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds);
+    const userMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+    const matchIds = matchesList.map(m => m.id);
+    const { data: allPredictions } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('group_id', currentGroup.id)
+      .in('match_id', matchIds);
+
+    const predByMatch = new Map();
+    matchesList.forEach(m => predByMatch.set(m.id, new Map()));
+    allPredictions?.forEach(p => {
+      const matchMap = predByMatch.get(p.match_id);
+      if (matchMap) matchMap.set(p.user_id, p);
+    });
+
+    const minutosLimite = currentGroup.config.minutos_limite_antes || 30;
+
+    container.innerHTML = matchesList.map(match => {
+      const status = getMatchStatus(match, minutosLimite);
+      const statusLabel = status === 'open' ? 'Abierto' : status === 'locked' ? 'Cerrado' : 'Finalizado';
+
+      if (status === 'open') {
+        return `
+          <div class="match-ticket">
+            <div class="ticket-header status-open">
+              <span><span class="status-dot"></span>${statusLabel}</span>
+              <span><i class="far fa-clock" style="margin-right:0.3rem;"></i>${formatDateTime(match.match_datetime)}</span>
+            </div>
+            <div class="ticket-body">
+              <div class="teams-row">
+                <span class="team-name">${escapeHtml(match.home_team)}</span>
+                <span class="vs-badge">VS</span>
+                <span class="team-name away">${escapeHtml(match.away_team)}</span>
+              </div>
+              <div class="locked-banner" style="margin-top:0.5rem;">
+                <i class="fas fa-eye-slash"></i> Los pronósticos se mostrarán cuando el partido esté cerrado
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const matchPredictions = predByMatch.get(match.id) || new Map();
+      return `
+        <div class="match-ticket">
+          <div class="ticket-header status-${status}">
+            <span><span class="status-dot"></span>${statusLabel}</span>
+            <span><i class="far fa-clock" style="margin-right:0.3rem;"></i>${formatDateTime(match.match_datetime)}</span>
+          </div>
+          <div class="ticket-body">
+            <div class="teams-row">
+              <span class="team-name">${escapeHtml(match.home_team)}</span>
+              <span class="vs-badge">VS</span>
+              <span class="team-name away">${escapeHtml(match.away_team)}</span>
+            </div>
+            <table class="all-predictions-table">
+              <thead>
+                <tr>
+                  <th>Jugador</th>
+                  <th style="text-align:center;">Local</th>
+                  <th style="text-align:center;">Visitante</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${userIds.map(uid => {
+                  const pred = matchPredictions.get(uid);
+                  const username = userMap.get(uid) || uid;
+                  const isYou = uid === currentUser.id;
+                  const crown = uid === currentGroup.created_by ? ' <i class="fas fa-crown" style="color:var(--gold); font-size:0.7rem;"></i>' : '';
+                  if (pred) {
+                    return `
+                      <tr>
+                        <td>${escapeHtml(username)}${crown} ${isYou ? '<span style="background:var(--gold-light);color:#78350f;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:100px;margin-left:0.3rem;font-weight:600;">Tú</span>' : ''}</td>
+                        <td style="text-align:center; font-weight:600;">${pred.predicted_home}</td>
+                        <td style="text-align:center; font-weight:600;">${pred.predicted_away}</td>
+                      </tr>
+                    `;
+                  } else {
+                    return `
+                      <tr>
+                        <td>${escapeHtml(username)}${crown} ${isYou ? '<span style="background:var(--gold-light);color:#78350f;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:100px;margin-left:0.3rem;font-weight:600;">Tú</span>' : ''}</td>
+                        <td colspan="2" style="text-align:center; color:var(--slate-light); font-style:italic;">Sin pronóstico</td>
+                      </tr>
+                    `;
+                  }
+                }).join('')}
+              </tbody>
+            </table>
+            ${match.result ? `<div class="result-badge" style="margin-top:0.5rem;"><i class="fas fa-futbol"></i> Resultado oficial: ${match.result.home} – ${match.result.away}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ========== HISTORY ==========
+  async function loadHistory() {
+    const { data: allMatches } = await supabase.from('matches').select('*').order('match_datetime', { ascending: false });
+    const oldMatches = (allMatches||[]).filter(m => !isMatchToday(m.match_datetime) && new Date(m.match_datetime) < new Date());
+    const container = document.getElementById("tabHistory");
+    if (!oldMatches.length) {
+      container.innerHTML = `<div class="empty-state"><i class="fas fa-history"></i><p>No hay partidos anteriores.</p></div>`;
+      return;
+    }
+    const { data: predictions } = await supabase.from('predictions').select('*').eq('group_id', currentGroup.id).eq('user_id', currentUser.id);
+    const predMap = new Map();
+    predictions?.forEach(p => predMap.set(p.match_id, p));
+    container.innerHTML = oldMatches.map(match => {
+      const pred = predMap.get(match.id);
+      return `
+        <div class="history-card">
+          <div class="match-title">${escapeHtml(match.home_team)} <span style="color:var(--slate-light);font-weight:400;">vs</span> ${escapeHtml(match.away_team)}</div>
+          <div class="date-label"><i class="far fa-calendar-alt"></i> ${formatDateTime(match.match_datetime)}</div>
+          <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.4rem; grid-column:1/-1;">
+            ${match.result ? `<div class="result-badge"><i class="fas fa-futbol"></i> ${match.result.home} – ${match.result.away}</div>` : '<span style="font-size:0.8rem;color:var(--slate-light);">Resultado pendiente</span>'}
+            ${pred ? `<div class="pred-badge"><i class="fas fa-check-circle"></i> Tu pronóstico: ${pred.predicted_home} – ${pred.predicted_away}</div>` : '<div class="no-pred-banner"><i class="fas fa-minus-circle"></i> Sin pronóstico</div>'}
+            ${pred?.points_earned != null ? `<div class="points-badge"><i class="fas fa-star"></i> ${pred.points_earned} pts</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ========== RANKING ==========
+  async function loadRanking() {
+    const { data: members } = await supabase.from('group_members').select('user_id').eq('group_id', currentGroup.id);
+    const container = document.getElementById("tabRanking");
+    if (!members?.length) { container.innerHTML = `<div class="empty-state"><i class="fas fa-trophy"></i><p>No hay miembros.</p></div>`; return; }
+    const userIds = members.map(m => m.user_id);
+    const { data: predictionsAll } = await supabase.from('predictions').select('user_id, points_earned').in('user_id', userIds).eq('group_id', currentGroup.id);
+    const pointsMap = new Map();
+    predictionsAll?.forEach(p => pointsMap.set(p.user_id, (pointsMap.get(p.user_id)||0) + (p.points_earned||0)));
+    const { data: profiles } = await supabase.from('profiles').select('id, username').in('id', userIds);
+    const ranking = userIds.map(uid => {
+      const profile = profiles?.find(p => p.id === uid);
+      return { uid, username: profile?.username || uid, points: pointsMap.get(uid)||0 };
+    }).sort((a,b) => b.points - a.points);
+    const posClass = i => i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const posIcon  = i => i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const fondo    = currentGroup.fondo_comun_total||0;
+    const porc     = currentGroup.config.porcentajes_premios;
+    container.innerHTML = `
+      <div class="ranking-wrap">
+        <table class="ranking-table">
+          <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr></thead>
+          <tbody>
+            ${ranking.map((u,i) => `
+              <tr>
+                <td><span class="rank-pos ${posClass(i)}">${posIcon(i)||i+1}</span></td>
+                <td>
+                  ${escapeHtml(u.username)}
+                  ${u.uid === currentGroup.created_by ? '<i class="fas fa-crown crown-icon" title="Creador"></i>' : ''}
+                  ${u.uid === currentUser.id ? '<span style="background:var(--gold-light);color:#78350f;font-size:0.7rem;padding:0.15rem 0.5rem;border-radius:100px;margin-left:0.3rem;font-weight:600;">Tú</span>' : ''}
+                </td>
+                <td class="pts-cell">${u.points}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="prize-card">
+        <div class="prize-item"><div class="pos">🥇 1er lugar</div><div class="amount">Bs. ${(fondo*(porc['1']||0)/100).toFixed(2)}</div><div class="pct">${porc['1']}% del fondo</div></div>
+        <div class="prize-item"><div class="pos">🥈 2do lugar</div><div class="amount">Bs. ${(fondo*(porc['2']||0)/100).toFixed(2)}</div><div class="pct">${porc['2']}% del fondo</div></div>
+        <div class="prize-item"><div class="pos">🥉 3er lugar</div><div class="amount">Bs. ${(fondo*(porc['3']||0)/100).toFixed(2)}</div><div class="pct">${porc['3']}% del fondo</div></div>
+        <div class="prize-item"><div class="pos">🏅 4to lugar</div><div class="amount">Bs. ${(fondo*(porc['4']||0)/100).toFixed(2)}</div><div class="pct">${porc['4']}% del fondo</div></div>
+        <div class="prize-total">Fondo total acumulado: <strong>Bs. ${fondo.toFixed(2)}</strong></div>
+      </div>
+    `;
+  }
+
+  // ========== CHAT ==========
+  async function setupChat() {
+    if (chatSubscription) await chatSubscription.unsubscribe();
+    await loadChatMessages();
+    chatSubscription = supabase.channel(`chat_${currentGroup.id}`)
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages', filter:`group_id=eq.${currentGroup.id}` }, async payload => {
+        const { data: profile } = await supabase.from('profiles').select('username').eq('id', payload.new.user_id).single();
+        appendMessage({ ...payload.new, username: profile?.username });
+      })
+      .subscribe();
+  }
+  async function loadChatMessages() {
+    const { data } = await supabase.from('chat_messages').select('*, user_id').eq('group_id', currentGroup.id).order('created_at', { ascending: true }).limit(100);
+    if (!data) return;
+    const userIds = [...new Set(data.map(m => m.user_id))];
+    const { data: profiles } = await supabase.from('profiles').select('id, username').in('id', userIds);
+    const userMap = new Map();
+    profiles?.forEach(p => userMap.set(p.id, p.username));
+    const container = document.getElementById("chatMessages");
+    container.innerHTML = '';
+    data.forEach(msg => appendMessage({ ...msg, username: userMap.get(msg.user_id)||msg.user_id }));
+  }
+  function appendMessage(msg) {
+    const container = document.getElementById("chatMessages");
+    const div = document.createElement('div');
+    div.className = 'message' + (msg.user_id === currentUser?.id ? ' own' : '');
+    const isCreator = currentGroup?.created_by === msg.user_id;
+    div.innerHTML = `<strong>${escapeHtml(msg.username)} ${isCreator ? '<i class="fas fa-crown" style="color:var(--gold);font-size:0.75rem;"></i>' : ''}</strong><small>${new Date(msg.created_at).toLocaleTimeString('es-BO', { timeZone: 'America/La_Paz' })}</small><br>${escapeHtml(msg.message)}`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+  document.getElementById("sendChatBtn").onclick = async () => {
+    const input = document.getElementById("chatInput");
+    if (!input.value.trim()) return;
+    await supabase.from('chat_messages').insert({ group_id: currentGroup.id, user_id: currentUser.id, message: input.value });
+    input.value = '';
+  };
+
+  // ========== ADMIN ==========
+  async function loadAdminTab() {
+    if (currentGroup.created_by !== currentUser.id) return;
+    const container = document.getElementById("tabAdmin");
+    const { data: matches } = await supabase.from('matches').select('*').order('match_datetime');
+    const sorted = [...(matches||[])].sort((a,b) => {
+      const af = a.result && a.status==='finished';
+      const bf = b.result && b.status==='finished';
+      if (af===bf) return 0;
+      return af ? 1 : -1;
+    });
+    container.innerHTML = `
+      <div class="admin-card">
+        <h3><i class="fas fa-plus-circle"></i> Agregar partido</h3>
+        <div class="form-grid">
+          <input type="text" id="newHomeTeam" placeholder="Equipo local">
+          <input type="text" id="newAwayTeam" placeholder="Equipo visitante">
+          <input type="datetime-local" id="newMatchDatetime">
+          <button id="addMatchBtn" class="btn btn-primary btn-sm" style="align-self:flex-start">Crear partido</button>
+        </div>
+      </div>
+      <div class="admin-card">
+        <h3><i class="fas fa-flag-checkered"></i> Cargar resultados</h3>
+        ${sorted.map(match => `
+          <div style="padding:0.75rem 0; border-bottom:1px solid var(--cream-dark);">
+            <div style="font-family:var(--font-display); font-size:0.875rem; font-weight:600; color:var(--slate); margin-bottom:0.5rem;">
+              ${escapeHtml(match.home_team)} <span style="color:var(--slate-light); font-weight:400;">vs</span> ${escapeHtml(match.away_team)}
+              <span style="font-size:0.72rem; color:var(--slate-light); font-weight:400; margin-left:0.5rem;">${formatDateTime(match.match_datetime)}</span>
+            </div>
+            <div class="result-row">
+              <input type="number" id="res_home_${match.id}" class="score-digit-input" placeholder="0" value="${match.result?.home??''}">
+              <span class="score-dash">—</span>
+              <input type="number" id="res_away_${match.id}" class="score-digit-input" placeholder="0" value="${match.result?.away??''}">
+              <button data-match="${match.id}" class="saveResultBtn btn btn-primary btn-sm">
+                <i class="fas fa-check"></i> Guardar
+              </button>
+              ${match.result && match.status==='finished'
+                ? `<span style="font-size:0.75rem; color:#10b981; font-weight:600; display:flex; align-items:center; gap:0.3rem;"><i class="fas fa-check-circle"></i> Finalizado</span>`
+                : `<span style="font-size:0.75rem; color:var(--slate-light);">Pendiente</span>`}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    document.getElementById("addMatchBtn")?.addEventListener('click', async () => {
+      const home     = document.getElementById("newHomeTeam").value.trim();
+      const away     = document.getElementById("newAwayTeam").value.trim();
+      const datetime = document.getElementById("newMatchDatetime").value;
+      if (!home||!away||!datetime) { showModal("Error", "Completá todos los campos.", true); return; }
+      const local  = new Date(datetime);
+      const utc    = new Date(local.getTime() - local.getTimezoneOffset()*60000);
+      const { error } = await supabase.from('matches').insert({ home_team: home, away_team: away, match_datetime: utc.toISOString() });
+      if (error) showModal("Error", error.message, true);
+      else { showModal("¡Partido creado!", `${home} vs ${away} agregado.`); loadAdminTab(); loadMatchesAndPredictions(); loadHistory(); }
+    });
+
+    // ===== BOTÓN GUARDAR RESULTADO (CON CÁLCULO DE PUNTOS) =====
+    document.querySelectorAll('.saveResultBtn').forEach(btn => {
+                btn.onclick = async () => {
+                    const matchId = btn.getAttribute('data-match');
+                    const resHome = parseInt(document.getElementById(`res_home_${matchId}`).value);
+                    const resAway = parseInt(document.getElementById(`res_away_${matchId}`).value);
+                    if (isNaN(resHome) || isNaN(resAway)) {
+                        showModal("Error", "Ingresa numeros validos.", true);
+                        return;
+                    }
+
+                    // 1. Guardar resultado
+                    const {error: matchError} = await supabase
+                        .from('matches')
+                        .update({result: {home: resHome, away: resAway}, status: 'finished'})
+                        .eq('id', matchId);
+                    if (matchError) {
+                        showModal("Error", matchError.message, true);
+                        return;
+                    }
+
+                    // 2. Obtener predicciones de este partido en este grupo
+                    const {data: preds, error: predsError} = await supabase
+                        .from('predictions')
+                        .select('id, predicted_home, predicted_away')
+                        .eq('match_id', matchId)
+                        .eq('group_id', currentGroup.id);
+                    if (predsError) {
+                        showModal("Error al leer pronosticos", predsError.message, true);
+                        return;
+                    }
+
+                    if (!preds || preds.length === 0) {
+                        showModal("Resultado guardado", "No habia pronosticos para este partido.");
+                        loadAdminTab();
+                        loadRanking();
+                        loadMatchesAndPredictions();
+                        loadHistory();
+                        loadAllPredictions();
+                        return;
+                    }
+
+                    // 3. Calcular y asignar puntos
+                    const config = currentGroup.config;
+                    const pGanador = config.puntos_ganador || 0;
+                    const pEmpate = config.puntos_empate || 0;
+                    const pExacto = config.puntos_marcador_exacto || 0;
+
+                    // Signo del resultado real: 1=local gana, -1=visita gana, 0=empate
+                    const signoReal = resHome > resAway ? 1 : resHome < resAway ? -1 : 0;
+
+                    let errCount = 0;
+                    for (const pred of preds) {
+                        const pH = pred.predicted_home;
+                        const pA = pred.predicted_away;
+                        let points = 0;
+
+                        if (pH === resHome && pA === resAway) {
+                            // Marcador exacto
+                            points = pExacto;
+                        } else {
+                            const signoPred = pH > pA ? 1 : pH < pA ? -1 : 0;
+                            if (signoPred === signoReal) {
+                                // Acerto el signo pero no el marcador exacto:
+                                // Si ambos son empate -> puntos de empate
+                                // Si acerto quien gana -> puntos de ganador
+                                points = (signoReal === 0) ? pEmpate : pGanador;
+                            }
+                            // No acerto el signo -> 0 puntos
+                        }
+
+                        const {error: upErr} = await supabase
+                            .from('predictions')
+                            .update({points_earned: points})
+                            .eq('id', pred.id);
+                        if (upErr) errCount++;
+                    }
+
+                    if (errCount > 0) {
+                        showModal("Advertencia", `Resultado guardado pero ${errCount} pronostico(s) no pudieron actualizarse.`, true);
+                    } else {
+                        showModal("Listo!", `Resultado ${resHome}-${resAway} guardado. ${preds.length} pronostico(s) puntuados.`);
+                    }
+                    loadAdminTab();
+                    loadRanking();
+                    loadMatchesAndPredictions();
+                    loadHistory();
+                    loadAllPredictions();
+                };
+            });
+        }
+
+  // ========== SETTINGS ==========
+  async function loadSettingsTab() {
+    const isCreator = currentGroup.created_by === currentUser.id;
+    const container = document.getElementById("tabSettings");
+    const { data: transactions } = await supabase.from('fund_transactions').select('*, profiles(username)').eq('group_id', currentGroup.id).order('created_at', { ascending: false });
+    const config = currentGroup.config;
+    container.innerHTML = `
+      <div class="settings-section">
+        <h3><i class="fas fa-info-circle"></i> Configuración del grupo</h3>
+        <div class="config-row"><label>ID del grupo</label><div class="id-chip" id="copyIdSettings" style="cursor:pointer"><i class="fas fa-fingerprint"></i>${currentGroup.id.slice(0,14)}…<i class="fas fa-copy"></i></div></div>
+        <div class="config-row"><label>Tipo de pronóstico</label><strong>${config.tipo_pronostico}</strong></div>
+        <div class="config-row"><label>Puntos — Ganador / Empate / Exacto</label><strong>${config.puntos_ganador} / ${config.puntos_empate} / ${config.puntos_marcador_exacto}</strong></div>
+        <div class="config-row"><label>Minutos límite antes del partido</label><strong>${config.minutos_limite_antes} min</strong></div>
+        <div class="config-row"><label>Porcentajes de premios</label><strong>1°=${config.porcentajes_premios['1']}% · 2°=${config.porcentajes_premios['2']}% · 3°=${config.porcentajes_premios['3']}% · 4°=${config.porcentajes_premios['4']}%</strong></div>
+        ${isCreator ? `
+          <div class="divider"></div>
+          <h4 style="font-family:var(--font-display); font-size:0.875rem; font-weight:700; color:var(--slate); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;"><i class="fas fa-edit" style="color:var(--green-bright)"></i> Editar reglas</h4>
+          <div class="edit-grid">
+            <label>Puntos por ganador</label><input type="number" id="editPuntosGanador" value="${config.puntos_ganador}">
+            <label>Puntos por empate</label><input type="number" id="editPuntosEmpate" value="${config.puntos_empate}">
+            <label>Puntos por marcador exacto</label><input type="number" id="editPuntosExacto" value="${config.puntos_marcador_exacto}">
+            <label>Minutos límite</label><input type="number" id="editMinutosLimite" value="${config.minutos_limite_antes}">
+            <label>% 1er lugar</label><input type="number" id="editPorc1" value="${config.porcentajes_premios['1']}">
+            <label>% 2do lugar</label><input type="number" id="editPorc2" value="${config.porcentajes_premios['2']}">
+            <label>% 3er lugar</label><input type="number" id="editPorc3" value="${config.porcentajes_premios['3']}">
+            <label>% 4to lugar</label><input type="number" id="editPorc4" value="${config.porcentajes_premios['4']}">
+          </div>
+          <button id="saveRulesBtn" class="btn btn-primary btn-sm" style="margin-top:0.9rem"><i class="fas fa-save"></i> Guardar cambios</button>
+        ` : ''}
+      </div>
+      <div class="fund-total-row">
+        <span>Fondo común acumulado</span>
+        <strong>Bs. ${(currentGroup.fondo_comun_total||0).toFixed(2)}</strong>
+      </div>
+      <div class="settings-section">
+        <h3><i class="fas fa-coins"></i> Fondo común</h3>
+        ${isCreator ? `
+          <div style="display:flex; flex-direction:column; gap:0.6rem; margin-bottom:1rem;">
+            <input type="text" id="depositorName" placeholder="Nombre del depositante">
+            <div style="display:flex; gap:0.6rem; align-items:center;">
+              <input type="number" id="addAmount" placeholder="Monto (Bs.)" step="0.01" style="flex:1;">
+              <button id="addFundBtn" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i> Agregar</button>
+            </div>
+          </div>
+        ` : '<p style="font-size:0.85rem; color:var(--slate-light); margin-bottom:0.75rem;"><i class="fas fa-lock"></i> Solo el creador puede registrar depósitos.</p>'}
+        ${transactions?.length ? `
+          <div style="overflow-x:auto; border-radius:var(--radius-sm); border:1px solid var(--border);">
+            <table class="fund-table">
+              <thead><tr><th>Fecha</th><th>Depositante</th><th>Monto</th><th>Registrado por</th></tr></thead>
+              <tbody>
+                ${transactions.map(t => `
+                  <tr>
+                    <td>${new Date(t.created_at).toLocaleString('es-BO', { timeZone:'America/La_Paz' })}</td>
+                    <td>${escapeHtml(t.description?.replace('Depósito de: ','')||'Anónimo')}</td>
+                    <td style="font-weight:600; color:var(--green-deep);">Bs. ${t.amount.toFixed(2)}</td>
+                    <td>${escapeHtml(t.profiles?.username||t.user_id)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : '<p style="font-size:0.85rem; color:var(--slate-light);">No hay depósitos registrados.</p>'}
+      </div>
+
+      <!-- NUEVO BOTÓN PARA EXPORTAR CSV -->
+      <div class="settings-section" style="margin-top:1rem;">
+        <h3><i class="fas fa-download"></i> Respaldo y transparencia</h3>
+        <p style="font-size:0.85rem; color:var(--slate-light); margin-bottom:0.75rem;">
+          Descarga un archivo CSV con todos los pronósticos y puntos del grupo.
+        </p>
+        <button id="downloadCsvBtn" class="btn btn-primary btn-sm">
+          <i class="fas fa-file-csv"></i> Descargar CSV
+        </button>
+      </div>
+    `;
+
+    document.getElementById("copyIdSettings")?.addEventListener('click', () => {
+      navigator.clipboard.writeText(currentGroup.id);
+      showModal("Copiado", "ID copiado al portapapeles.");
+    });
+
+    if (isCreator) {
+      document.getElementById("saveRulesBtn")?.addEventListener('click', async () => {
+        const g  = v => parseInt(document.getElementById(v).value);
+        const pg = g("editPuntosGanador"), pe = g("editPuntosEmpate"), pex = g("editPuntosExacto"), ml = g("editMinutosLimite");
+        const p1 = g("editPorc1"), p2 = g("editPorc2"), p3 = g("editPorc3"), p4 = g("editPorc4");
+        if ([pg,pe,pex,ml].some(isNaN)) { showModal("Error", "Los puntos deben ser números.", true); return; }
+        if (p1+p2+p3+p4 !== 100)        { showModal("Error", "Los porcentajes deben sumar 100%.", true); return; }
+        const newConfig = { ...currentGroup.config, puntos_ganador:pg, puntos_empate:pe, puntos_marcador_exacto:pex, minutos_limite_antes:ml, porcentajes_premios:{"1":p1,"2":p2,"3":p3,"4":p4} };
+        const { error } = await supabase.from('groups').update({ config: newConfig }).eq('id', currentGroup.id);
+        if (error) showModal("Error", error.message, true);
+        else { currentGroup.config = newConfig; showModal("¡Guardado!", "Reglas actualizadas."); loadSettingsTab(); loadRanking(); loadMatchesAndPredictions(); }
+      });
+      document.getElementById("addFundBtn")?.addEventListener('click', async () => {
+        const amount    = parseFloat(document.getElementById("addAmount").value);
+        const depositor = document.getElementById("depositorName").value.trim();
+        if (isNaN(amount)||amount<=0) { showModal("Error", "Monto inválido.", true); return; }
+        if (!depositor)               { showModal("Error", "Ingresá el nombre del depositante.", true); return; }
+        const { error } = await supabase.from('fund_transactions').insert({ group_id: currentGroup.id, user_id: currentUser.id, amount, description: `Depósito de: ${depositor}` });
+        if (error) showModal("Error", error.message, true);
+        else {
+          const newTotal = (currentGroup.fondo_comun_total||0) + amount;
+          await supabase.from('groups').update({ fondo_comun_total: newTotal }).eq('id', currentGroup.id);
+          currentGroup.fondo_comun_total = newTotal;
+          document.getElementById("addAmount").value = '';
+          document.getElementById("depositorName").value = '';
+          loadSettingsTab(); loadRanking();
+          showModal("¡Depósito registrado!", `Bs. ${amount.toFixed(2)} agregados. Depositante: ${depositor}`);
+        }
+      });
+    }
+
+    // Listener para el botón de descarga CSV
+    document.getElementById("downloadCsvBtn")?.addEventListener('click', downloadCSV);
+  }
+
+  // ========== NAV ==========
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    const tid = `tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`;
+    document.getElementById(tid)?.classList.remove('hidden');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const activeEl = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('data-tab') === tabId);
+    if (activeEl) activeEl.classList.add('active');
+    if (tabId === 'ranking')  loadRanking();
+    if (tabId === 'history')  loadHistory();
+    if (tabId === 'chat')     loadChatMessages();
+    if (tabId === 'admin'  && currentGroup?.created_by === currentUser?.id) loadAdminTab();
+    if (tabId === 'settings') loadSettingsTab();
+    if (tabId === 'allpredictions') loadAllPredictions();
+  }
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.onclick = () => switchTab(tab.getAttribute('data-tab'));
+  });
+
+  // ========== EXPORTACIÓN CSV ==========
+  async function downloadCSV() {
+    if (!currentGroup) {
+      showModal("Error", "No hay grupo seleccionado.", true);
+      return;
+    }
+    showModal("Generando CSV", "Espera un momento mientras se prepara el archivo...");
+
+    // 1. Obtener todas las predicciones del grupo
+    const { data: predictions } = await supabase
+      .from('predictions')
+      .select('*')
+      .eq('group_id', currentGroup.id);
+
+    if (!predictions || predictions.length === 0) {
+      showModal("Sin datos", "No hay pronósticos en este grupo para exportar.", true);
+      return;
+    }
+
+    // 2. Obtener todos los partidos involucrados
+    const matchIds = [...new Set(predictions.map(p => p.match_id))];
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('*')
+      .in('id', matchIds);
+
+    // Mapa de partidos
+    const matchMap = new Map(matches?.map(m => [m.id, m]) || []);
+
+    // 3. Obtener perfiles de los usuarios
+    const userIds = [...new Set(predictions.map(p => p.user_id))];
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, username')
+      .in('id', userIds);
+    const userMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+    // 4. Construir el contenido CSV
+    const BOM = '\uFEFF';  // Marca BOM para que Excel reconozca UTF-8
+    const header = 'Partido,Fecha,Resultado,Jugador,Pronóstico Local,Pronóstico Visitante,Puntos';
+    const rows = predictions.map(p => {
+      const match = matchMap.get(p.match_id);
+      const matchName = match ? `${match.home_team} vs ${match.away_team}` : 'Desconocido';
+      const date = match ? formatDateTime(match.match_datetime) : '';
+      const result = match?.result ? `${match.result.home}-${match.result.away}` : 'Pendiente';
+      const username = userMap.get(p.user_id) || p.user_id;
+      const local = p.predicted_home;
+      const visit = p.predicted_away;
+      const points = p.points_earned ?? '';
+      return `"${matchName}","${date}","${result}","${username}",${local},${visit},${points}`;
+    });
+
+    const csvContent = BOM + header + '\n' + rows.join('\n');
+
+    // 5. Descargar el archivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `backup_${currentGroup.name.replace(/[^a-z0-9]/gi,'_')}_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showModal("¡Descarga lista!", "El archivo CSV se ha descargado correctamente.");
+  }
+
+  // ========== BOOT ==========
+  loadUser();
+})();
+</script>
+</body>
+</html>
