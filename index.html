@@ -1693,69 +1693,95 @@
 
     // ===== BOTÓN GUARDAR RESULTADO (CON CÁLCULO DE PUNTOS) =====
     document.querySelectorAll('.saveResultBtn').forEach(btn => {
-      btn.onclick = async () => {
-        const matchId = btn.getAttribute('data-match');
-        const home    = parseInt(document.getElementById(`res_home_${matchId}`).value);
-        const away    = parseInt(document.getElementById(`res_away_${matchId}`).value);
-        if (isNaN(home)||isNaN(away)) { showModal("Error", "Ingresá números válidos.", true); return; }
+                btn.onclick = async () => {
+                    const matchId = btn.getAttribute('data-match');
+                    const resHome = parseInt(document.getElementById(`res_home_${matchId}`).value);
+                    const resAway = parseInt(document.getElementById(`res_away_${matchId}`).value);
+                    if (isNaN(resHome) || isNaN(resAway)) {
+                        showModal("Error", "Ingresa numeros validos.", true);
+                        return;
+                    }
 
-        // 1. Actualizar el partido con el resultado y estado 'finished'
-        const { error } = await supabase
-          .from('matches')
-          .update({ result: { home, away }, status: 'finished' })
-          .eq('id', matchId);
-        if (error) {
-          showModal("Error", error.message, true);
-          return;
+                    // 1. Guardar resultado
+                    const {error: matchError} = await supabase
+                        .from('matches')
+                        .update({result: {home: resHome, away: resAway}, status: 'finished'})
+                        .eq('id', matchId);
+                    if (matchError) {
+                        showModal("Error", matchError.message, true);
+                        return;
+                    }
+
+                    // 2. Obtener predicciones de este partido en este grupo
+                    const {data: preds, error: predsError} = await supabase
+                        .from('predictions')
+                        .select('id, predicted_home, predicted_away')
+                        .eq('match_id', matchId)
+                        .eq('group_id', currentGroup.id);
+                    if (predsError) {
+                        showModal("Error al leer pronosticos", predsError.message, true);
+                        return;
+                    }
+
+                    if (!preds || preds.length === 0) {
+                        showModal("Resultado guardado", "No habia pronosticos para este partido.");
+                        loadAdminTab();
+                        loadRanking();
+                        loadMatchesAndPredictions();
+                        loadHistory();
+                        loadAllPredictions();
+                        return;
+                    }
+
+                    // 3. Calcular y asignar puntos
+                    const config = currentGroup.config;
+                    const pGanador = config.puntos_ganador || 0;
+                    const pEmpate = config.puntos_empate || 0;
+                    const pExacto = config.puntos_marcador_exacto || 0;
+
+                    // Signo del resultado real: 1=local gana, -1=visita gana, 0=empate
+                    const signoReal = resHome > resAway ? 1 : resHome < resAway ? -1 : 0;
+
+                    let errCount = 0;
+                    for (const pred of preds) {
+                        const pH = pred.predicted_home;
+                        const pA = pred.predicted_away;
+                        let points = 0;
+
+                        if (pH === resHome && pA === resAway) {
+                            // Marcador exacto
+                            points = pExacto;
+                        } else {
+                            const signoPred = pH > pA ? 1 : pH < pA ? -1 : 0;
+                            if (signoPred === signoReal) {
+                                // Acerto el signo pero no el marcador exacto:
+                                // Si ambos son empate -> puntos de empate
+                                // Si acerto quien gana -> puntos de ganador
+                                points = (signoReal === 0) ? pEmpate : pGanador;
+                            }
+                            // No acerto el signo -> 0 puntos
+                        }
+
+                        const {error: upErr} = await supabase
+                            .from('predictions')
+                            .update({points_earned: points})
+                            .eq('id', pred.id);
+                        if (upErr) errCount++;
+                    }
+
+                    if (errCount > 0) {
+                        showModal("Advertencia", `Resultado guardado pero ${errCount} pronostico(s) no pudieron actualizarse.`, true);
+                    } else {
+                        showModal("Listo!", `Resultado ${resHome}-${resAway} guardado. ${preds.length} pronostico(s) puntuados.`);
+                    }
+                    loadAdminTab();
+                    loadRanking();
+                    loadMatchesAndPredictions();
+                    loadHistory();
+                    loadAllPredictions();
+                };
+            });
         }
-
-        // 2. Obtener todas las predicciones de este partido en el grupo
-        const { data: predictions } = await supabase
-          .from('predictions')
-          .select('*')
-          .eq('match_id', matchId)
-          .eq('group_id', currentGroup.id);
-
-        if (predictions && predictions.length > 0) {
-          // 3. Calcular puntos según la configuración del grupo
-          const config = currentGroup.config;
-          const updates = predictions.map(pred => {
-            let points = 0;
-            const predHome = pred.predicted_home;
-            const predAway = pred.predicted_away;
-
-            if (predHome === home && predAway === away) {
-              // Marcador exacto
-              points = config.puntos_marcador_exacto || 0;
-            } else if (predHome === predAway && home === away) {
-              // Empate acertado pero no exacto
-              points = config.puntos_empate || 0;
-            } else if (
-              (predHome > predAway && home > away) ||
-              (predHome < predAway && home < away)
-            ) {
-              // Ganador acertado
-              points = config.puntos_ganador || 0;
-            }
-
-            return supabase
-              .from('predictions')
-              .update({ points_earned: points })
-              .eq('id', pred.id);
-          });
-
-          await Promise.all(updates);
-        }
-
-        showModal("Resultado guardado", "Puntos actualizados correctamente.");
-        loadAdminTab();
-        loadRanking();
-        loadMatchesAndPredictions();
-        loadHistory();
-        loadAllPredictions();
-      };
-    });
-  }
 
   // ========== SETTINGS ==========
   async function loadSettingsTab() {
