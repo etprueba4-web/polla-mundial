@@ -1398,47 +1398,71 @@
 
   // ===== RANKING =====
   async function loadRanking() {
-    const { data: members } = await supabase.from('group_members').select('user_id').eq('group_id', currentGroup.id);
-    const container = document.getElementById("tabRanking");
-    if (!members?.length) { container.innerHTML=`<div class="empty-state"><i class="fas fa-trophy"></i><p>Sin miembros.</p></div>`; return; }
-    const userIds = members.map(m=>m.user_id);
-    // DESPUÉS
-    // ANTES
-const [predsRes, profilesRes] = await Promise.all([
-  supabase.from('predictions').select('user_id,points_earned').in('user_id', userIds).eq('group_id', currentGroup.id),
-  supabase.from('profiles').select('id,username').in('id', userIds)
-]);
-    const ptMap = new Map();
-    predsRes.data?.forEach(p=>ptMap.set(p.user_id, (ptMap.get(p.user_id)||0)+(p.points_earned||0)));
-    const ranking = userIds.map(uid=>({
-      uid, username: profilesRes.data?.find(p=>p.id===uid)?.username||uid, points: ptMap.get(uid)||0
-    })).sort((a,b)=>b.points-a.points);
-    const pcl = i=>i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const pic = i=>i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-    const fondo = currentGroup.fondo_comun_total||0;
-    const porc = currentGroup.config.porcentajes_premios;
-    container.innerHTML = `
-      <div class="ranking-wrap">
-        <table class="ranking-table">
-          <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr></thead>
-          <tbody>
-            ${ranking.map((u,i)=>`
-              <tr>
-                <td><span class="rank-pos ${pcl(i)}">${pic(i)||i+1}</span></td>
-                <td>${esc(u.username)}${u.uid===currentGroup.created_by?'<i class="fas fa-crown crown-icon"></i>':''}${u.uid===currentUser.id?'<span style="background:var(--gold-light);color:#78350f;font-size:.7rem;padding:.15rem .5rem;border-radius:100px;margin-left:.3rem;font-weight:600">Tú</span>':''}</td>
-                <td class="pts-cell">${u.points}</td>
-              </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div class="prize-card">
-        <div class="prize-item"><div class="pos">🥇 1er lugar</div><div class="amount">Bs. ${(fondo*(porc['1']||0)/100).toFixed(2)}</div><div class="pct">${porc['1']}%</div></div>
-        <div class="prize-item"><div class="pos">🥈 2do lugar</div><div class="amount">Bs. ${(fondo*(porc['2']||0)/100).toFixed(2)}</div><div class="pct">${porc['2']}%</div></div>
-        <div class="prize-item"><div class="pos">🥉 3er lugar</div><div class="amount">Bs. ${(fondo*(porc['3']||0)/100).toFixed(2)}</div><div class="pct">${porc['3']}%</div></div>
-        <div class="prize-item"><div class="pos">🏅 4to lugar</div><div class="amount">Bs. ${(fondo*(porc['4']||0)/100).toFixed(2)}</div><div class="pct">${porc['4']}%</div></div>
-        <div class="prize-total">Fondo total: <strong>Bs. ${fondo.toFixed(2)}</strong></div>
-      </div>`;
+  const container = document.getElementById("tabRanking");
+  container.innerHTML = `<div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando ranking…</p></div>`;
+
+  // Traer predicciones del grupo con puntos ganados
+  const { data: preds, error } = await supabase
+    .from('predictions')
+    .select('user_id, points_earned')
+    .eq('group_id', currentGroup.id)
+    .not('points_earned', 'is', null)
+    .gt('points_earned', 0);
+
+  if (error) { container.innerHTML = `<div class="empty-state"><p>Error al cargar ranking.</p></div>`; return; }
+
+  // Agrupar y sumar por user_id
+  const ptMap = new Map();
+  (preds || []).forEach(p => {
+    ptMap.set(p.user_id, (ptMap.get(p.user_id) || 0) + p.points_earned);
+  });
+
+  if (!ptMap.size) {
+    container.innerHTML = `<div class="empty-state"><i class="fas fa-trophy"></i><p>Aún no hay puntos registrados.</p></div>`;
+    return;
   }
+
+  // Traer usernames solo de quienes tienen puntos
+  const userIds = [...ptMap.keys()];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, username')
+    .in('id', userIds);
+
+  const uMap = new Map(profiles?.map(p => [p.id, p.username]) || []);
+
+  // Construir ranking ordenado de mayor a menor
+  const ranking = [...ptMap.entries()]
+    .map(([uid, points]) => ({ uid, username: uMap.get(uid) || uid, points }))
+    .sort((a, b) => b.points - a.points);
+
+  const pcl = i => i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+  const pic = i => i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+  const fondo = currentGroup.fondo_comun_total || 0;
+  const porc = currentGroup.config.porcentajes_premios;
+
+  container.innerHTML = `
+    <div class="ranking-wrap">
+      <table class="ranking-table">
+        <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr></thead>
+        <tbody>
+          ${ranking.map((u, i) => `
+            <tr>
+              <td><span class="rank-pos ${pcl(i)}">${pic(i) || i + 1}</span></td>
+              <td>${esc(u.username)}${u.uid === currentGroup.created_by ? '<i class="fas fa-crown crown-icon"></i>' : ''}${u.uid === currentUser.id ? '<span style="background:var(--gold-light);color:#78350f;font-size:.7rem;padding:.15rem .5rem;border-radius:100px;margin-left:.3rem;font-weight:600">Tú</span>' : ''}</td>
+              <td class="pts-cell">${u.points}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="prize-card">
+      <div class="prize-item"><div class="pos">🥇 1er lugar</div><div class="amount">Bs. ${(fondo * (porc['1'] || 0) / 100).toFixed(2)}</div><div class="pct">${porc['1']}%</div></div>
+      <div class="prize-item"><div class="pos">🥈 2do lugar</div><div class="amount">Bs. ${(fondo * (porc['2'] || 0) / 100).toFixed(2)}</div><div class="pct">${porc['2']}%</div></div>
+      <div class="prize-item"><div class="pos">🥉 3er lugar</div><div class="amount">Bs. ${(fondo * (porc['3'] || 0) / 100).toFixed(2)}</div><div class="pct">${porc['3']}%</div></div>
+      <div class="prize-item"><div class="pos">🏅 4to lugar</div><div class="amount">Bs. ${(fondo * (porc['4'] || 0) / 100).toFixed(2)}</div><div class="pct">${porc['4']}%</div></div>
+      <div class="prize-total">Fondo total: <strong>Bs. ${fondo.toFixed(2)}</strong></div>
+    </div>`;
+}
 
   // ===== CHAT =====
   async function setupChat() {
