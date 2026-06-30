@@ -731,7 +731,8 @@
 
   // Convierte un partido de OpenLigaDB al formato interno
   function apiMatchToInternal(m) {
-    const finalResult = m.matchResults?.find(r => r.resultTypeID === 2);
+    // Después (prórroga si existe, si no 90 min)
+    const finalResult = m.matchResults?.find(r => r.resultTypeID === 4) || m.matchResults?.find(r => r.resultTypeID === 2);
     const isLive = !m.matchIsFinished && new Date() > new Date(m.matchDateTimeUTC);
     const localDT = toBoliviaDisplay(m.matchDateTimeUTC);
     return {
@@ -1401,8 +1402,11 @@
     const container = document.getElementById("tabRanking");
     if (!members?.length) { container.innerHTML=`<div class="empty-state"><i class="fas fa-trophy"></i><p>Sin miembros.</p></div>`; return; }
     const userIds = members.map(m=>m.user_id);
+    // DESPUÉS
     const [predsRes, profilesRes] = await Promise.all([
-      supabase.from('predictions').select('user_id,points_earned').in('user_id', userIds).eq('group_id', currentGroup.id),
+      supabase.from('predictions').select('user_id,points_earned')
+      .eq('group_id', currentGroup.id)
+      .not('points_earned', 'is', null),
       supabase.from('profiles').select('id,username').in('id', userIds)
     ]);
     const ptMap = new Map();
