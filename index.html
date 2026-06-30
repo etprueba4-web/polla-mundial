@@ -1403,12 +1403,11 @@
     if (!members?.length) { container.innerHTML=`<div class="empty-state"><i class="fas fa-trophy"></i><p>Sin miembros.</p></div>`; return; }
     const userIds = members.map(m=>m.user_id);
     // DESPUÉS
-    const [predsRes, profilesRes] = await Promise.all([
-      supabase.from('predictions').select('user_id,points_earned')
-      .eq('group_id', currentGroup.id)
-      .not('points_earned', 'is', null),
-      supabase.from('profiles').select('id,username').in('id', userIds)
-    ]);
+    // ANTES
+const [predsRes, profilesRes] = await Promise.all([
+  supabase.from('predictions').select('user_id,points_earned').in('user_id', userIds).eq('group_id', currentGroup.id),
+  supabase.from('profiles').select('id,username').in('id', userIds)
+]);
     const ptMap = new Map();
     predsRes.data?.forEach(p=>ptMap.set(p.user_id, (ptMap.get(p.user_id)||0)+(p.points_earned||0)));
     const ranking = userIds.map(uid=>({
