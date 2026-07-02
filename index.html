@@ -759,6 +759,7 @@
     if (session?.user) {
       currentUser = session.user;
       await ensureProfile();
+      supabase.from('login_origins').insert({ user_id: session.user.id, origin_url: window.location.href }).then(()=>{}).catch(()=>{});
       if (isRecovery) {
         unauthDiv.classList.add("hidden"); authDiv.classList.add("hidden");
         resetPanel.classList.remove("hidden"); groupsPanel.classList.add("hidden");
