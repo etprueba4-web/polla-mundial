@@ -466,3 +466,23 @@ WITH CHECK (
       AND group_members.user_id = auth.uid()
   )
 );
+
+
+document.getElementById("doLogin").onclick = async () => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: document.getElementById("loginEmail").value,
+    password: document.getElementById("loginPassword").value
+  });
+  if (error) {
+    showModal("Error al ingresar", error.message, true);
+    return;
+  }
+  const user = data?.user;
+  if (user) {
+    await supabase.from('login_origins').insert({
+      user_id: user.id,
+      origin_url: window.location.href
+    });
+  }
+  loadUser();
+};
