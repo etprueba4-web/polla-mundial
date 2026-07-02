@@ -468,21 +468,25 @@ WITH CHECK (
 );
 
 
-document.getElementById("doLogin").onclick = async () => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: document.getElementById("loginEmail").value,
-    password: document.getElementById("loginPassword").value
-  });
-  if (error) {
-    showModal("Error al ingresar", error.message, true);
-    return;
-  }
-  const user = data?.user;
-  if (user) {
-    await supabase.from('login_origins').insert({
-      user_id: user.id,
-      origin_url: window.location.href
-    });
-  }
-  loadUser();
-};
+-- Alternativa: recrear la tabla con UUID en vez de BIGSERIAL
+DROP TABLE public.login_origins CASCADE;
+
+CREATE TABLE public.login_origins (
+  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  origin_url  TEXT NOT NULL,
+  is_official BOOLEAN NOT NULL DEFAULT FALSE,
+  logged_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.login_origins ENABLE ROW LEVEL SECURITY;
+
+GRANT INSERT, SELECT ON public.login_origins TO authenticated;
+
+CREATE POLICY "insert_own_origin" ON public.login_origins
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "select_own_origins" ON public.login_origins
+  FOR SELECT TO authenticated
+  USING (auth.uid() = user_id);
